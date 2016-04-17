@@ -10,6 +10,7 @@ enum settings
     SETTINGS_INITIALIZATION_FRAME_TIME  = 1048576LU,
     SETTINGS_INITIALIZATION_TIME        = 30,
     SETTINGS_MAX_NEIGHBOURS             = 32,
+    SETTINGS_NEIGHBOURS_TTL             = 4,
     SETTINGS_ROOT_TTL                   = 255,
     SETTINGS_RX                         = IINIC_RSSI_103 | IINIC_GAIN_20 | IINIC_BW_270,
     SETTINGS_RXBUFFER_SIZE              = 768,
@@ -24,7 +25,8 @@ extern uint8_t *txbuffer_ptr;
 
 #define MESSAGES_CONFIGURATION                                              \
     REGISTER_MESSAGE(DISCOVERY,         Discovery,          CONSTANT,   0)  \
-    REGISTER_MESSAGE(SYNCHRONIZATION,   Synchronization,    CONSTANT,   1)
+    REGISTER_MESSAGE(SYNCHRONIZATION,   Synchronization,    CONSTANT,   1)  \
+    REGISTER_MESSAGE(NEIGHBOURS,        Neighbours,         CONSTANT,   2)
 
 enum EventOptions
 {
