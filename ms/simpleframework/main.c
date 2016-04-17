@@ -1,5 +1,6 @@
 #include "config.h"
 #include "iinic/iinic.h"
+#include "iinic_patch.h"
 #include "messages/enabled.h"
 #include "protocol/handlers.h"
 #include "initialization.h"
@@ -23,9 +24,11 @@ void iinic_main(void)
     iinic_led_off(IINIC_LED_GREEN);
     iinic_led_off(IINIC_LED_RED);
 
-    debug("\r\n\n[?] Hello World! My MAC is 0x%04x\r\n", iinic_mac);
+    iinic_timing time; iinic_get_now(&time);
 
-    on_init(MAIN_EVENT);
+    debug("\r\n\n[%lu] Hello World! My MAC is 0x%04x\r\n", *(uint32_t *) &time, iinic_mac);
+
+    on_init(&time, MAIN_EVENT);
 
     // INITIALIZATION
     initialization_loop();

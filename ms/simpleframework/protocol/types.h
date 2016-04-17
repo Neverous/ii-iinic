@@ -59,13 +59,13 @@ void message_set_size(struct _MessageBase_VARIABLE *msg, uint16_t size)
     msg->kind = (msg->kind & 0x3F) | (size & 0xC0);
 }
 
-uint16_t message_get_size(struct _MessageBase_VARIABLE *msg)
+uint16_t message_get_size(const struct _MessageBase_VARIABLE *msg)
 {
     return ((uint16_t) (msg->kind & 0xC0) << 8) | msg->size_low;
 }
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    void put_Message ## Name(void);
+    void put_Message ## Name(const iinic_timing const *, uint8_t *);
 
 MESSAGES_CONFIGURATION
 #undef REGISTER_MESSAGE
