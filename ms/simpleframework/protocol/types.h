@@ -65,7 +65,7 @@ uint16_t message_get_size(const struct _MessageBase_VARIABLE *msg)
 }
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    void put_Message ## Name(const iinic_timing const *, uint8_t *);
+    void put_Message ## Name(Time_cptr *, uint8_t *);
 
 MESSAGES_CONFIGURATION
 #undef REGISTER_MESSAGE

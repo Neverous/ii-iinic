@@ -1,8 +1,8 @@
 #ifndef __CRC_H__
 #define __CRC_H__
 
-#include <util/crc16.h>
 #include <stdint.h>
+#include <util/crc16.h>
 
 inline
 static uint16_t crc16(const uint8_t *buf, uint16_t len)
