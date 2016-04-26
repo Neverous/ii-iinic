@@ -136,6 +136,9 @@ uint8_t handle_MessageDiscovery(Time_cptr *time, const uint16_t rssi,
         root.ttl = SETTINGS_ROOT_TTL;
     }
 
+    if(root.macaddr == msg->root_macaddr)
+        root.ttl = SETTINGS_ROOT_TTL;
+
     update_neighbour(time, msg->macaddr, SETTINGS_ROOT_TTL);
     return 0;
 }

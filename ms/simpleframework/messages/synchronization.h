@@ -317,8 +317,69 @@ void calculate_clock(Time_cptr *time)
 {
     if(valid_sync_points < SETTINGS_SYNCHRONIZATION_POINTS / 2)
     {
+#if !SYNCHRONIZATION_FAST_SYNC
         NOTICE( "[" TIME_FMT "] not enough synchronization points %u\r\n",
                 TIME_FMT_DATA(*time), valid_sync_points);
+#else
+        NOTICE( "[" TIME_FMT "] not enough synchronization points %u"
+                " for full sync\r\n", TIME_FMT_DATA(*time), valid_sync_points);
+
+        int64_t new_offset = 0;
+        uint16_t new_seq_id     = 0;
+        uint64_t new_last_sync  = 0;
+        uint8_t count = 0;
+        for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+        {
+            if(sync_point[s].state != STATE_VALID)
+                continue;
+
+            uint64_t global_time = \
+                ((1LL * sync_point[s].global_time.high) << 32) +
+                sync_point[s].global_time.low;
+
+            uint64_t local_time = \
+                ((1LL * sync_point[s].local_time.high) << 32) +
+                sync_point[s].local_time.low;
+
+            int64_t offset = (int64_t) (global_time - local_time);
+
+            new_offset += offset;
+            if(new_seq_id < sync_point[s].seq_id)
+                new_seq_id = sync_point[s].seq_id;
+
+            new_last_sync += local_time;
+            ++ count;
+        }
+
+        new_offset /= count;
+        new_last_sync /= count;
+        if(new_offset < 0)
+        {
+            clock.add = false;
+            new_offset *= -1;
+        }
+
+        else
+            clock.add = true;
+
+        DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
+                " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+                TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
+                clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
+
+        clock.offset.low = new_offset;
+        clock.offset.high = new_offset >> 32;
+
+        clock.last_sync.low = new_last_sync;
+        clock.last_sync.high = new_last_sync >> 32;
+
+        clock.seq_id = new_seq_id;
+
+        NOTICE( "[" TIME_FMT "] new clock_offset=%d:" TIME_FMT
+                " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+                TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
+                clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
+#endif // !SYNCHRONIZATION_FAST_SYNC
         return;
     }
 

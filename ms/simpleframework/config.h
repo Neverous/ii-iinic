@@ -5,6 +5,7 @@
 #include "iinic/iinic.h"
 
 #define DEBUG_LEVEL 3
+#define SYNCHRONIZATION_FAST_SYNC true
 
 enum settings
 {
