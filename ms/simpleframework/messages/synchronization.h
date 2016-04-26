@@ -147,9 +147,10 @@ uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
             TIME_FMT_DATA(global_time));
 
     if(msg->root_macaddr > root.macaddr ||
-        (int16_t) (msg->seq_id - clock.seq_id) <= 0)
+        (msg->root_macaddr == root.macaddr &&
+         (int16_t) (msg->seq_id - clock.seq_id) <= 0))
         return 0;
-    //
+
     // Handle like discovery message
     handle_MessageDiscovery(time, rssi, (MessageDiscovery *) msg, options);
 
@@ -322,7 +323,7 @@ void calculate_clock(Time_cptr *time)
     }
 
     uint16_t leader = 0;
-    uint16_t count = 0;
+    uint8_t count = 0;
     for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(sync_point[s].state != STATE_VALID)
@@ -443,7 +444,7 @@ void calculate_clock(Time_cptr *time)
         offset_sum += (int64_t) a * b;
     }
 
-    if(local_sum != 0)
+    if(local_sum != 0 && offset_sum != 0)
         new_skew = 100 * local_sum / offset_sum;
 
     DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
