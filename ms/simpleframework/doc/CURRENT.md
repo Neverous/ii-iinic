@@ -12,13 +12,13 @@ Zbiór przydatnych informacji.
 
 
 * Bitrate (przepływność?): **115200** bitów na sekundę ~ **14KB/s**
-* Czas ramki w fazie inicjalizacji i normalnej pracy: ~**1s**
+* Czas ramki w fazie inicjalizacji i normalnej pracy: ~**0.5s**
 * Częstotliwość wysyłania synchronizacji: **8s**
-* Liczba slotów: **128** (każde urządzenie losuje w którym chce nadawać to daje jakieś **37%** szans że nie będzie kolizji przy maksymalnym zagęszczeniu) [wzorek o ile umiem liczyć to: n! / ((n-k)! * n^k), gdzie **n** to liczba slotów a **k** to liczba urządzeń]
-* Daje to teoretycznie przepustowość **100B/s** na urządzenie rzeczywista wychodzi ok. **50B/s**
+* Liczba slotów: **32** (każde urządzenie losuje w którym chce nadawać to daje jakieś **1%** szans że nie będzie kolizji przy maksymalnym zagęszczeniu i **38%** przy połowie) [wzorek o ile umiem liczyć to: n! / ((n-k)! * n^k), gdzie **n** to liczba slotów a **k** to liczba urządzeń]
+* Daje to teoretycznie przepustowość **225B/s** na urządzenie rzeczywista wychodzi ok. **100B/s**
 
 
-* Aktualne zużycie pamięci na program i RAM: code: **13466 bytes** (**41%**); ram: **1346 bytes** (**65%**)
+* Aktualne zużycie pamięci na program i RAM: code: **13466 bytes** (**41%**); ram: **914 bytes** (**44%**)
 
 
 * Wiadomość wykrywania sąsiadów ([discovery](../messages/discovery.h)) waży **7B** {kind:**1B**, macaddr: **2B**, root_macaddr: **2B**, crc: **2B**}
