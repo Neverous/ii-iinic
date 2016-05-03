@@ -96,7 +96,7 @@ void on_slot_start_MessageDiscovery(Time_cptr *slot_start,
         case TDMA_EVENT:
             if(SETTINGS_DISCOVERY_PERIOD > 1)
             {
-                if(send_discovery_msg % SETTINGS_DISCOVERY_PERIOD == 0)
+                if((send_discovery_msg % SETTINGS_DISCOVERY_PERIOD) == 0)
                 {
                     put_MessageDiscovery(slot_start, 0);
                 }

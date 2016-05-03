@@ -1,6 +1,8 @@
 #ifndef __MESSAGE_SYNCHRONIZATION_H__
 #define __MESSAGE_SYNCHRONIZATION_H__
 
+#include <limits.h>
+
 #include "../protocol/types.h"
 #include "discovery.h"
 
@@ -128,9 +130,9 @@ void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
         clock.seq_id = 0;
 
 #if SYNCHRONIZATION_FAST_SYNC
-    if(just_synced || send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD == 0)
+    if(just_synced || (send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD) == 0)
 #else
-    if(send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD == 0)
+    if((send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD) == 0)
 #endif // SYNCHRONIZATION_FAST_SYNC
     {
         if(iinic_mac == root.macaddr)
@@ -215,9 +217,8 @@ void time_local_to_global(Time *global_time, Time_cptr *local_time)
 
     Time skew_diff = *local_time;
     time_sub(&skew_diff, &clock.last_sync);
-    skew_diff.low *= clock.skew;
-    skew_diff.high *= clock.skew;
-    time_add(global_time, &skew_diff);
+    time_add_i32(global_time, clock.skew * skew_diff.low);
+    time_add_i32(global_time, (clock.skew * UINT_MAX) * skew_diff.high);
 
     DEBUG(  "[" TIME_FMT "] global_time=" TIME_FMT " local_time=" TIME_FMT
             "\r\n", TIME_FMT_DATA(*local_time), TIME_FMT_DATA(*global_time),
@@ -242,9 +243,8 @@ void time_global_to_local(Time *local_time, Time_cptr *global_time)
 
     Time skew_diff = *local_time;
     time_sub(&skew_diff, &clock.last_sync);
-    skew_diff.low *= clock.skew;
-    skew_diff.high *= clock.skew;
-    time_sub(local_time, &skew_diff);
+    time_add_i32(local_time, -clock.skew * skew_diff.low);
+    time_add_i32(local_time, -(clock.skew * UINT_MAX) * skew_diff.high);
 
     DEBUG(  "[" TIME_FMT "] local_time=" TIME_FMT " global_time=" TIME_FMT
             "\r\n", TIME_FMT_DATA(*local_time), TIME_FMT_DATA(*local_time),
@@ -323,7 +323,7 @@ void validate_sync_points(void)
         }
 
         else if(sync_point[s].state != STATE_VALID)
-            sync_point[s].state = STATE_VALID;
+            continue;
 
         ++ valid_sync_points;
     }

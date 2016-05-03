@@ -23,6 +23,9 @@ struct
 } clock;
 
 uint8_t send_sync_msg;
+#if SYNCHRONIZATION_FAST_SYNC
+bool    just_synced;
+#endif // SYNCHRONIZATION_FAST_SYNC
 
 void time_local_to_global(Time *global_time, Time_cptr *local_time);
 void time_global_to_local(Time *local_time, Time_cptr *global_time);
@@ -37,6 +40,9 @@ void on_init_MessageSynchronization(_unused Time_cptr *time,
     {
         case MAIN_EVENT:
             send_sync_msg  = random() % SETTINGS_SYNCHRONIZATION_PERIOD;
+#if SYNCHRONIZATION_FAST_SYNC
+            just_synced     = false;
+#endif // SYNCHRONIZATION_FAST_SYNC
             break;
     }
 }
@@ -88,12 +94,19 @@ void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
     if(iinic_mac == root.macaddr && root.ttl == 1)
         clock.seq_id = 0;
 
-    if(send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD == 0)
+#if SYNCHRONIZATION_FAST_SYNC
+    if(just_synced || (send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD) == 0)
+#else
+    if((send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD) == 0)
+#endif // SYNCHRONIZATION_FAST_SYNC
     {
         if(iinic_mac == root.macaddr)
             ++ clock.seq_id;
 
         put_MessageSynchronization(slot_start, 0);
+#if SYNCHRONIZATION_FAST_SYNC
+        just_synced = false;
+#endif // SYNCHRONIZATION_FAST_SYNC
     }
 
     send_sync_msg = (send_sync_msg + 1) % SETTINGS_SYNCHRONIZATION_PERIOD;
@@ -121,8 +134,10 @@ uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
             msg->root_macaddr, msg->seq_id, TIME_FMT_DATA(msg->global_time),
             TIME_FMT_DATA(global_time));
 
-    if(msg->root_macaddr > root.macaddr ||
-        (int16_t) (msg->seq_id - clock.seq_id) <= 0)
+    if(msg->root_macaddr == iinic_mac ||                // Am I the root?
+        msg->root_macaddr > root.macaddr ||             // Is it even root
+        (msg->root_macaddr == root.macaddr &&           // If so, is it newer
+         (int16_t) (msg->seq_id - clock.seq_id) <= 0))  // than before
         return 0;
 
     // Handle like discovery message
