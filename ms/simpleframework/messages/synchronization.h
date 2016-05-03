@@ -146,9 +146,10 @@ uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
             msg->root_macaddr, msg->seq_id, TIME_FMT_DATA(msg->global_time),
             TIME_FMT_DATA(global_time));
 
-    if(msg->root_macaddr > root.macaddr ||
-        (msg->root_macaddr == root.macaddr &&
-         (int16_t) (msg->seq_id - clock.seq_id) <= 0))
+    if(msg->root_macaddr == iinic_mac ||                // Am I the root?
+        msg->root_macaddr > root.macaddr ||             // Is it even root
+        (msg->root_macaddr == root.macaddr &&           // If so, is it newer
+         (int16_t) (msg->seq_id - clock.seq_id) <= 0))  // than before
         return 0;
 
     // Handle like discovery message
