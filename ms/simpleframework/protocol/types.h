@@ -8,10 +8,14 @@
 #error "Missing messages configuration!"
 #endif
 
+const uint8_t MESSAGE_VARIABLE_KIND_MASK        = 0x3F;
+const uint8_t MESSAGE_VARIABLE_SIZE_HIGH_MASK   = 0xC0;
+
 typedef enum _MessageSize
 {
-    SIZE_CONSTANT = 0,
-    SIZE_VARIABLE = 1,
+    SIZE_CONSTANT   = 0,
+    SIZE_VARIABLE   = 1,
+    SIZE_MASK       = 1,
 } MessageSize;
 
 typedef enum _MessageKind
@@ -56,12 +60,30 @@ void message_set_size(struct _MessageBase_VARIABLE *msg, uint16_t size)
 {
     msg->size_low = size & 0xFF;
     size >>= 2;
-    msg->kind = (msg->kind & 0x3F) | (size & 0xC0);
+    msg->kind   = (msg->kind & MESSAGE_VARIABLE_KIND_MASK)
+                | (size & MESSAGE_VARIABLE_SIZE_HIGH_MASK);
 }
 
 uint16_t message_get_size(const struct _MessageBase_VARIABLE *msg)
 {
-    return ((uint16_t) (msg->kind & 0xC0) << 8) | msg->size_low;
+    return (    (uint16_t) (msg->kind & MESSAGE_VARIABLE_SIZE_HIGH_MASK) << 8)
+            |   msg->size_low;
+}
+
+void message_set_kind(struct _MessageBase_VARIABLE *msg, uint8_t kind)
+{
+    msg->kind   = (kind & MESSAGE_VARIABLE_KIND_MASK)
+                | (msg->kind & MESSAGE_VARIABLE_SIZE_HIGH_MASK);
+}
+
+uint8_t message_get_kind(const struct _MessageBase_VARIABLE *msg)
+{
+    return msg->kind & MESSAGE_VARIABLE_KIND_MASK;
+}
+
+bool message_is_variable_size(const Message *msg)
+{
+    return (msg->kind & SIZE_MASK) == SIZE_VARIABLE;
 }
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \

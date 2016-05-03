@@ -10,9 +10,11 @@
 #error "Missing messages configuration!"
 #endif
 
-uint8_t handle_messages(Time_cptr *time, const uint16_t rssi,
+bool handle_messages(   Time_cptr *time, const uint16_t rssi,
                         uint8_t *buffer_ptr, const uint8_t const *buffer_end,
                         const uint8_t options);
+
+bool validate_message_size(Message *msg, uint8_t **buffer_ptr);
 
 void on_init(Time_cptr *time, const uint8_t options);
 void on_frame_start(Time_cptr *frame_start, Time *frame_deadline,
@@ -25,7 +27,7 @@ void on_slot_end(Time_cptr *slot_end, const uint8_t options);
 void on_frame_end(Time_cptr *frame_end, uint8_t options);
 
 
-uint8_t handle_messages(Time_cptr *time, const uint16_t rssi,
+bool handle_messages(   Time_cptr *time, const uint16_t rssi,
                         uint8_t *buffer_ptr, const uint8_t const *buffer_end,
                         const uint8_t options)
 {
@@ -35,36 +37,21 @@ uint8_t handle_messages(Time_cptr *time, const uint16_t rssi,
     while(buffer_ptr < buffer_end)
     {
         Message *msg = (Message *) buffer_ptr;
-        buffer_ptr += 2;
-
-        // Validate message size
-        switch(msg->kind)
+        if(!validate_message_size(msg, &buffer_ptr))
         {
-#define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    case KIND_ ## NAME:                                                     \
-        if(SIZE_ ## size_type == SIZE_CONSTANT)                             \
-            buffer_ptr += sizeof(struct Message ## Name);                   \
-        else                                                                \
-            buffer_ptr += message_get_size(                                 \
-                (struct _MessageBase_VARIABLE *) msg);                      \
-                                                                            \
-        break;
+            WARNING("[" TIME_FMT "] dropping messages: unknown kind %u\r\n",
+                    TIME_FMT_DATA(*time), msg->kind);
 
-MESSAGES_CONFIGURATION
-#undef REGISTER_MESSAGE
-            default:
-                WARNING("[" TIME_FMT "] dropping messages: unknown kind %u\r\n",
-                        TIME_FMT_DATA(*time), msg->kind);
-
-                return 1;
+            return false;
         }
 
+        buffer_ptr += 2; // for CRC
         if(buffer_ptr > buffer_end)
         {
             WARNING("[" TIME_FMT "] dropping messages: buffer overflow\r\n",
                     TIME_FMT_DATA(*time));
 
-            return 1;
+            return false;
         }
 
         // Validate CRC
@@ -76,8 +63,12 @@ MESSAGES_CONFIGURATION
             continue;
         }
 
+        uint8_t kind = message_is_variable_size(msg) ?
+                        message_get_kind((struct _MessageBase_VARIABLE *) msg) :
+                        msg->kind;
+
         // Handle message
-        switch(msg->kind)
+        switch(kind)
         {
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
     case KIND_ ## NAME:                                                     \
@@ -92,7 +83,34 @@ MESSAGES_CONFIGURATION
         break;
     }
 
-    return 0;
+    return true;
+}
+
+bool validate_message_size(Message *msg, uint8_t **buffer_ptr)
+{
+    uint8_t kind = message_is_variable_size(msg) ?
+                    message_get_kind((struct _MessageBase_VARIABLE *) msg) :
+                    msg->kind;
+
+    switch(kind)
+    {
+#define REGISTER_MESSAGE(NAME, Name, size_type, id)                     \
+case KIND_ ## NAME:                                                     \
+    if(SIZE_ ## size_type == SIZE_CONSTANT)                             \
+        *buffer_ptr += sizeof(struct Message ## Name);                  \
+    else                                                                \
+        *buffer_ptr += message_get_size(                                \
+            (struct _MessageBase_VARIABLE *) msg);                      \
+                                                                        \
+    break;
+
+MESSAGES_CONFIGURATION
+#undef REGISTER_MESSAGE
+        default:
+            return false;
+    }
+
+    return true;
 }
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
