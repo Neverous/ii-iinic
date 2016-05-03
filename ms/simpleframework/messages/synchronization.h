@@ -18,7 +18,7 @@ struct
 {
     bool        add;
     Time        offset;
-    int32_t     skew;
+    float       skew;
     uint16_t    seq_id;
     Time        last_sync;
 } clock;
@@ -66,7 +66,7 @@ void on_frame_start_MessageSynchronization( Time_cptr *frame_start,
                                             const uint8_t options)
 {
     Time global_time; time_local_to_global(&global_time, frame_start);
-    DEBUG(  "[" TIME_FMT "] clock_offset=%d:" TIME_FMT " clock_skew=%ld"
+    DEBUG(  "[" TIME_FMT "] clock_offset=%d:" TIME_FMT " clock_skew=%0.4f"
             " seq_id=%u last_sync=" TIME_FMT " global_time=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*frame_start), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync),
@@ -192,14 +192,11 @@ void time_local_to_global(Time *global_time, Time_cptr *local_time)
     else
         time_sub(global_time, &clock.offset);
 
-    if(clock.skew)
-    {
-        Time skew_diff = *local_time;
-        time_sub(&skew_diff, &clock.last_sync);
-        time_add_i32(global_time, 100 * skew_diff.low / clock.skew);
-        skew_diff.low = 0;
-        time_add(global_time, &skew_diff);
-    }
+    Time skew_diff = *local_time;
+    time_sub(&skew_diff, &clock.last_sync);
+    skew_diff.low *= clock.skew;
+    skew_diff.high *= clock.skew;
+    time_add(global_time, &skew_diff);
 
     DEBUG(  "[" TIME_FMT "] global_time=" TIME_FMT " local_time=" TIME_FMT
             "\r\n", TIME_FMT_DATA(*local_time), TIME_FMT_DATA(*global_time),
@@ -222,14 +219,11 @@ void time_global_to_local(Time *local_time, Time_cptr *global_time)
     else
         time_add(local_time, &clock.offset);
 
-    if(clock.skew)
-    {
-        Time skew_diff = *local_time;
-        time_sub(&skew_diff, &clock.last_sync);
-        time_add_i32(local_time, -100 * skew_diff.low / clock.skew);
-        skew_diff.low = 0;
-        time_sub(local_time, &skew_diff);
-    }
+    Time skew_diff = *local_time;
+    time_sub(&skew_diff, &clock.last_sync);
+    skew_diff.low *= clock.skew;
+    skew_diff.high *= clock.skew;
+    time_sub(local_time, &skew_diff);
 
     DEBUG(  "[" TIME_FMT "] local_time=" TIME_FMT " global_time=" TIME_FMT
             "\r\n", TIME_FMT_DATA(*local_time), TIME_FMT_DATA(*local_time),
@@ -316,6 +310,9 @@ void validate_sync_points(void)
 
 void calculate_clock(Time_cptr *time)
 {
+    if(!valid_sync_points)
+        return;
+
     if(valid_sync_points < SETTINGS_SYNCHRONIZATION_POINTS / 2)
     {
 #if !SYNCHRONIZATION_FAST_SYNC
@@ -364,7 +361,7 @@ void calculate_clock(Time_cptr *time)
             clock.add = true;
 
         DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
-                " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+                " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
                 TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
                 clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 
@@ -377,7 +374,7 @@ void calculate_clock(Time_cptr *time)
         clock.seq_id = new_seq_id;
 
         NOTICE( "[" TIME_FMT "] new clock_offset=%d:" TIME_FMT
-                " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+                " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
                 TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
                 clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 #endif // !SYNCHRONIZATION_FAST_SYNC
@@ -425,7 +422,7 @@ void calculate_clock(Time_cptr *time)
     }
 
     int64_t new_offset      = 0;
-    int32_t new_skew        = clock.skew;
+    float new_skew          = clock.skew;
     uint16_t new_seq_id     = 0;
     uint64_t new_last_sync  = 0;
 
@@ -506,11 +503,11 @@ void calculate_clock(Time_cptr *time)
         offset_sum += (int64_t) a * b;
     }
 
-    if(local_sum != 0 && offset_sum != 0)
-        new_skew = 100 * local_sum / offset_sum;
+    if(local_sum != 0)
+        new_skew = (float) offset_sum / local_sum;
 
     DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
-            " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+            " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 
@@ -533,7 +530,7 @@ void calculate_clock(Time_cptr *time)
     clock.seq_id = new_seq_id;
 
     NOTICE( "[" TIME_FMT "] new clock_offset=%d:" TIME_FMT
-            " clock_skew=%ld seq_id=%u last_sync=" TIME_FMT "\r\n",
+            " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 }
