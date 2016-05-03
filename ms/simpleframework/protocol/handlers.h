@@ -39,10 +39,11 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
         Message *msg = (Message *) buffer_ptr;
         if(!validate_message_size(msg, &buffer_ptr))
         {
-            WARNING("[" TIME_FMT "] dropping messages: unknown kind %u\r\n",
+            WARNING("[" TIME_FMT "] skipping message byte: unknown kind %u\r\n",
                     TIME_FMT_DATA(*time), msg->kind);
 
-            return false;
+            ++ buffer_ptr;
+            continue;
         }
 
         buffer_ptr += 2; // for CRC
