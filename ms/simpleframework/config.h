@@ -22,7 +22,7 @@ enum settings
                                         | IINIC_BW_270,
 
     SETTINGS_RXBUFFER_SIZE              = 384,
-    SETTINGS_SYNCHRONIZATION_PERIOD     = 16,
+    SETTINGS_SYNCHRONIZATION_PERIOD     = 64,
     SETTINGS_SYNCHRONIZATION_POINTS     = 8,
     SETTINGS_TDMA_FRAME_TIME            = 1048576LU,
     SETTINGS_TDMA_SLOTS                 = 32,

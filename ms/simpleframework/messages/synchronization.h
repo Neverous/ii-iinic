@@ -4,6 +4,10 @@
 #include "../protocol/types.h"
 #include "discovery.h"
 
+#ifndef SYNCHRONIZATION_FAST_SYNC
+#define SYNCHRONIZATION_FAST_SYNC   false
+#endif
+
 typedef struct MessageSynchronization
 {
     MessageSynchronization_base base;
@@ -40,6 +44,9 @@ struct
 uint8_t valid_sync_points;
 
 uint8_t send_sync_msg;
+#if SYNCHRONIZATION_FAST_SYNC
+bool    just_synced;
+#endif // SYNCHRONIZATION_FAST_SYNC
 
 void time_local_to_global(Time *global_time, Time_cptr *local_time);
 void time_global_to_local(Time *local_time, Time_cptr *global_time);
@@ -56,7 +63,10 @@ void on_init_MessageSynchronization(_unused Time_cptr *time,
     switch(options)
     {
         case MAIN_EVENT:
-            send_sync_msg  = random() % SETTINGS_SYNCHRONIZATION_PERIOD;
+            send_sync_msg   = random() % SETTINGS_SYNCHRONIZATION_PERIOD;
+#if SYNCHRONIZATION_FAST_SYNC
+            just_synced     = false;
+#endif // SYNCHRONIZATION_FAST_SYNC
             break;
     }
 }
@@ -66,7 +76,7 @@ void on_frame_start_MessageSynchronization( Time_cptr *frame_start,
                                             const uint8_t options)
 {
     Time global_time; time_local_to_global(&global_time, frame_start);
-    DEBUG(  "[" TIME_FMT "] clock_offset=%d:" TIME_FMT " clock_skew=%0.4f"
+    DEBUG(  "[" TIME_FMT "] clock_offset=%d:" TIME_FMT " clock_skew=%0.9f"
             " seq_id=%u last_sync=" TIME_FMT " global_time=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*frame_start), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync),
@@ -107,18 +117,29 @@ void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
         return;
 
     if(iinic_mac != root.macaddr &&
+#if SYNCHRONIZATION_FAST_SYNC
+        !valid_sync_points)
+#else
         valid_sync_points < SETTINGS_SYNCHRONIZATION_POINTS / 2)
+#endif // SYNCHRONIZATION_FAST_SYNC
         return;
 
     if(iinic_mac == root.macaddr && root.ttl == 1)
         clock.seq_id = 0;
 
+#if SYNCHRONIZATION_FAST_SYNC
+    if(just_synced || send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD == 0)
+#else
     if(send_sync_msg % SETTINGS_SYNCHRONIZATION_PERIOD == 0)
+#endif // SYNCHRONIZATION_FAST_SYNC
     {
         if(iinic_mac == root.macaddr)
             ++ clock.seq_id;
 
         put_MessageSynchronization(slot_start, 0);
+#if SYNCHRONIZATION_FAST_SYNC
+        just_synced = false;
+#endif // SYNCHRONIZATION_FAST_SYNC
     }
 
     send_sync_msg = (send_sync_msg + 1) % SETTINGS_SYNCHRONIZATION_PERIOD;
@@ -322,7 +343,7 @@ void calculate_clock(Time_cptr *time)
         NOTICE( "[" TIME_FMT "] not enough synchronization points %u"
                 " for full sync\r\n", TIME_FMT_DATA(*time), valid_sync_points);
 
-        int64_t new_offset = 0;
+        int64_t new_offset      = 0;
         uint16_t new_seq_id     = 0;
         uint64_t new_last_sync  = 0;
         uint8_t count = 0;
@@ -361,7 +382,7 @@ void calculate_clock(Time_cptr *time)
             clock.add = true;
 
         DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
-                " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
+                " clock_skew=%0.9f seq_id=%u last_sync=" TIME_FMT "\r\n",
                 TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
                 clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 
@@ -373,8 +394,10 @@ void calculate_clock(Time_cptr *time)
 
         clock.seq_id = new_seq_id;
 
+        just_synced = true;
+
         NOTICE( "[" TIME_FMT "] new clock_offset=%d:" TIME_FMT
-                " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
+                " clock_skew=%0.9f seq_id=%u last_sync=" TIME_FMT "\r\n",
                 TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
                 clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 #endif // !SYNCHRONIZATION_FAST_SYNC
@@ -507,7 +530,7 @@ void calculate_clock(Time_cptr *time)
         new_skew = (float) offset_sum / local_sum;
 
     DEBUG(  "[" TIME_FMT "] previous clock_offset=%d:" TIME_FMT
-            " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
+            " clock_skew=%0.9f seq_id=%u last_sync=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 
@@ -529,8 +552,12 @@ void calculate_clock(Time_cptr *time)
 
     clock.seq_id = new_seq_id;
 
+#if SYNCHRONIZATION_FAST_SYNC
+    just_synced = true;
+#endif
+
     NOTICE( "[" TIME_FMT "] new clock_offset=%d:" TIME_FMT
-            " clock_skew=%0.4f seq_id=%u last_sync=" TIME_FMT "\r\n",
+            " clock_skew=%0.9f seq_id=%u last_sync=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), clock.add, TIME_FMT_DATA(clock.offset),
             clock.skew, clock.seq_id, TIME_FMT_DATA(clock.last_sync));
 }
