@@ -3,22 +3,12 @@
 
 #include <limits.h>
 
-#include "../protocol/types.h"
-#include "discovery.h"
+#include "struct.h"
+#include "messages/discovery/discovery.h"
 
 #ifndef SYNCHRONIZATION_FAST_SYNC
 #define SYNCHRONIZATION_FAST_SYNC   false
 #endif
-
-typedef struct MessageSynchronization
-{
-    MessageSynchronization_base base;
-
-    uint16_t macaddr;
-    uint16_t root_macaddr;
-    uint16_t seq_id;
-    Time global_time;
-} MessageSynchronization;
 
 struct
 {
@@ -59,7 +49,7 @@ void validate_sync_points(void);
 void calculate_clock(Time_cptr *time);
 
 
-void on_init_MessageSynchronization(_unused Time_cptr *time,
+void on_init_MessageSynchronization(__unused__ Time_cptr *time,
                                     const uint8_t options)
 {
     switch(options)
@@ -112,7 +102,7 @@ void on_frame_start_MessageSynchronization( Time_cptr *frame_start,
 }
 
 void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
-                                            _unused Time *slot_end,
+                                            __unused__ Time *slot_end,
                                             const uint8_t options)
 {
     if(options != TDMA_EVENT)
@@ -147,19 +137,19 @@ void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
     send_sync_msg = (send_sync_msg + 1) % SETTINGS_SYNCHRONIZATION_PERIOD;
 }
 
-void on_slot_end_MessageSynchronization(_unused Time_cptr *slot_end,
-                                        _unused const uint8_t options)
+void on_slot_end_MessageSynchronization(__unused__ Time_cptr *slot_end,
+                                        __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageSynchronization(   _unused Time_cptr *frame_end,
-                                            _unused const uint8_t options)
+void on_frame_end_MessageSynchronization(   __unused__ Time_cptr *frame_end,
+                                            __unused__ const uint8_t options)
 {
 }
 
-uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
-                                        MessageSynchronization *msg,
-                                        const uint8_t options)
+void handle_MessageSynchronization( Time_cptr *time, const uint16_t rssi,
+                                    MessageSynchronization_cptr *msg,
+                                    const uint8_t options)
 {
     Time global_time; time_local_to_global(&global_time, time);
     NOTICE( "[" TIME_FMT "] Got synchronization message options=0x%02x rssi=%u"
@@ -173,19 +163,18 @@ uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
         msg->root_macaddr > root.macaddr ||             // Is it even root
         (msg->root_macaddr == root.macaddr &&           // If so, is it newer
          (int16_t) (msg->seq_id - clock.seq_id) <= 0))  // than before
-        return 0;
+        return;
 
     // Handle like discovery message
     handle_MessageDiscovery(time, rssi, (MessageDiscovery *) msg, options);
 
     add_sync_point(time, &msg->global_time, msg->seq_id, msg->root_macaddr);
     calculate_clock(time);
-    return 0;
 }
 
 uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
                                         const uint8_t const *buffer_end,
-                                        _unused uint8_t *ctx)
+                                        __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageSynchronization) > buffer_end)
         return 0;

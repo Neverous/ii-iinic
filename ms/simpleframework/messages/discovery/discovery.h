@@ -3,15 +3,7 @@
 
 #include <stdlib.h>
 
-#include "../protocol/types.h"
-
-typedef struct MessageDiscovery
-{
-    MessageDiscovery_base base;
-
-    uint16_t macaddr;
-    uint16_t root_macaddr;
-} MessageDiscovery;
+#include "struct.h"
 
 typedef struct Neighbour
 {
@@ -53,7 +45,7 @@ void on_init_MessageDiscovery(Time_cptr *time, const uint8_t options)
 }
 
 void on_frame_start_MessageDiscovery(   Time_cptr *frame_start,
-                                        _unused Time *frame_deadline,
+                                        __unused__ Time *frame_deadline,
                                         const uint8_t options)
 {
     switch(options)
@@ -84,7 +76,7 @@ void on_frame_start_MessageDiscovery(   Time_cptr *frame_start,
 }
 
 void on_slot_start_MessageDiscovery(Time_cptr *slot_start,
-                                    _unused Time *slot_end,
+                                    __unused__ Time *slot_end,
                                     const uint8_t options)
 {
     switch(options)
@@ -109,18 +101,19 @@ void on_slot_start_MessageDiscovery(Time_cptr *slot_start,
     }
 }
 
-void on_slot_end_MessageDiscovery(  _unused Time_cptr *slot_end,
-                                    _unused const uint8_t options)
+void on_slot_end_MessageDiscovery(  __unused__ Time_cptr *slot_end,
+                                    __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageDiscovery( _unused Time_cptr *slot_end,
-                                    _unused const uint8_t options)
+void on_frame_end_MessageDiscovery( __unused__ Time_cptr *slot_end,
+                                    __unused__ const uint8_t options)
 {
 }
 
-uint8_t handle_MessageDiscovery(Time_cptr *time, const uint16_t rssi,
-                                MessageDiscovery *msg, const uint8_t options)
+void handle_MessageDiscovery(   Time_cptr *time, const uint16_t rssi,
+                                MessageDiscovery_cptr *msg,
+                                const uint8_t options)
 {
     NOTICE( "[" TIME_FMT "] Got discovery message options=0x%02x rssi=%u "
             " macaddr=0x%04x root_macaddr=0x%04x\r\n", TIME_FMT_DATA(*time),
@@ -140,12 +133,12 @@ uint8_t handle_MessageDiscovery(Time_cptr *time, const uint16_t rssi,
         root.ttl = SETTINGS_ROOT_TTL;
 
     update_neighbour(time, msg->macaddr, SETTINGS_ROOT_TTL);
-    return 0;
 }
 
-uint8_t *write_MessageDiscovery(_unused Time_cptr *time, uint8_t *buffer_start,
+uint8_t *write_MessageDiscovery(__unused__ Time_cptr *time,
+                                uint8_t *buffer_start,
                                 const uint8_t const *buffer_end,
-                                _unused uint8_t *ctx)
+                                __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageDiscovery) > buffer_end)
         return 0;

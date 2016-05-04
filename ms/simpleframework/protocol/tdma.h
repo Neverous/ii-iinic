@@ -1,16 +1,73 @@
-#ifndef __TDMA_H__
-#define  __TDMA_H__
+#ifndef __PROTOCOL_TDMA_H__
+#define __PROTOCOL_TDMA_H__
 
-#include "config.h"
-#include "iinic_wrapper.h"
-#include "protocol/handlers.h"
+#include <stdint.h>
+#include <stdlib.h>
 
-uint16_t tdma_slot;
+#include "common.h"
+#include "handlers.h"
+#include "tdma.h"
 
-void tdma_listen_until(Time_cptr *now, Time_cptr *until);
-void tdma_speak_until(Time_cptr *now, Time_cptr *until);
+#include "messages/structs.h"
+
+extern uint16_t tdma_slot;
+
 void tdma_loop(void);
 
+
+static
+void tdma_listen_until(Time_cptr *now, Time_cptr *until)
+{
+    DEBUG(  "[" TIME_FMT "] listening until " TIME_FMT "\r\n",
+            TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
+
+    while(timed_poll(IINIC_RX_COMPLETE, until))
+    {
+        handle_messages((Time_cptr *) &iinic_rx_timing, iinic_rx_rssi,
+                        rxbuffer, iinic_buffer_ptr, TDMA_EVENT);
+        iinic_rx();
+    }
+}
+
+static
+void tdma_speak_until(Time_cptr *now, Time_cptr *until)
+{
+    if(txbuffer_ptr == txbuffer)
+        return;
+
+    iinic_idle();
+    iinic_set_buffer(txbuffer, txbuffer_ptr - txbuffer);
+    iinic_tx();
+
+    DEBUG(  "[" TIME_FMT "] speaking until " TIME_FMT "\r\n",
+            TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
+
+    NOTICE( "[" TIME_FMT "] sending %d bytes\r\n",
+            TIME_FMT_DATA(*now), txbuffer_ptr - txbuffer);
+
+    uint32_t count = 0;
+    while(timed_poll(IINIC_TX_COMPLETE, until))
+    {
+        count ++;
+        iinic_tx();
+    }
+
+    if(!count)
+    {
+        WARNING("[" TIME_FMT "] failed to send any messages\r\n",
+                TIME_FMT_DATA(*until));
+    }
+
+    else
+    {
+        DEBUG(  "[" TIME_FMT "] sent %lu times\r\n",
+                TIME_FMT_DATA(*until), count);
+    }
+
+    iinic_idle();
+    iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
+    iinic_rx();
+}
 
 void tdma_loop(void)
 {
@@ -29,10 +86,10 @@ void tdma_loop(void)
             TIME_FMT_DATA(loop_start),
             SETTINGS_TDMA_FRAME_TIME / SETTINGS_TDMA_SLOTS);
 
-    DEBUG(  "[" TIME_FMT "]   slots_count=%d\r\n",
+    DEBUG(  "[" TIME_FMT "]    slots_count=%d\r\n",
             TIME_FMT_DATA(loop_start), SETTINGS_TDMA_SLOTS);
 
-    DEBUG(  "[" TIME_FMT "]   tdma_slot=%u\r\n",
+    DEBUG(  "[" TIME_FMT "]    tdma_slot=%u\r\n",
             TIME_FMT_DATA(loop_start), tdma_slot);
 
     on_init(0, TDMA_EVENT);
@@ -73,56 +130,4 @@ void tdma_loop(void)
     iinic_led_off(IINIC_LED_GREEN);
 }
 
-void tdma_listen_until(Time_cptr *now, Time_cptr *until)
-{
-    DEBUG(  "[" TIME_FMT "] listening until " TIME_FMT "\r\n",
-            TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
-
-    while(timed_poll(IINIC_RX_COMPLETE, until))
-    {
-        handle_messages((Time_cptr *) &iinic_rx_timing, iinic_rx_rssi,
-                        rxbuffer, iinic_buffer_ptr, TDMA_EVENT);
-        iinic_rx();
-    }
-}
-
-void tdma_speak_until(Time_cptr *now, Time_cptr *until)
-{
-    if(txbuffer_ptr == txbuffer)
-        return;
-
-    iinic_idle();
-    iinic_set_buffer(txbuffer, txbuffer_ptr - txbuffer);
-    iinic_tx();
-
-    DEBUG(  "[" TIME_FMT "] speaking until " TIME_FMT "\r\n",
-            TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
-
-    NOTICE( "[" TIME_FMT "] sending %d bytes\r\n",
-            TIME_FMT_DATA(*now), txbuffer_ptr - txbuffer);
-
-    uint32_t count = 0;
-    while(timed_poll(IINIC_TX_COMPLETE, until))
-    {
-        count ++;
-        iinic_tx();
-    }
-
-    if(!count)
-    {
-        WARNING("[" TIME_FMT "] failed to send any messages\r\n",
-                TIME_FMT_DATA(*until));
-    }
-
-    else
-    {
-        DEBUG(  "[" TIME_FMT "] sent %lu times\r\n",
-                TIME_FMT_DATA(*until), count);
-    }
-
-    iinic_idle();
-    iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
-    iinic_rx();
-}
-
-#endif // __TDMA_H__
+#endif // __PROTOCOL_TDMA_H__

@@ -13,10 +13,12 @@ SIZE      	:= avr-size
 OBJCOPY   	:= avr-objcopy
 DUDE      	:= sudo avrdude -p $(DUDEMCU) -c stk500v2 -P usb -q -q
 
-CFLAGS		:= -DF_CPU=14745600 -DNDEBUG -Os -std=gnu11 -mmcu=$(MCU) \
+PWD			= $(shell pwd)
+
+CFLAGS		:= -DF_CPU=14745600 -DNDEBUG -Os -flto -std=gnu11 -mmcu=$(MCU) \
 				-fpack-struct -fshort-enums -funsigned-char -funsigned-bitfields \
 				-ffunction-sections -ffast-math -fdata-sections -Wl,--gc-sections \
-				-Wall -Wextra -Wshadow -Werror -Wl,-u,vfprintf -lprintf_flt
+				-Wall -Wextra -Wshadow -Werror -Wl,-u,vfprintf -lprintf_flt -I$(PWD)
 
 PROGNAME	:= main
 
@@ -36,8 +38,11 @@ $(PROGNAME).hex: $(PROGNAME)
 $(PROGNAME).bin: $(PROGNAME)
 	$(OBJCOPY) -O binary -j .text -j .data $^ $@
 
-$(PROGNAME): $(PROGNAME).c *.h */*.h iinic/iinic.c
-	$(CC) $(CFLAGS) iinic/iinic.c $(PROGNAME).c -o $@
+$(PROGNAME): 	iinic/iinic.c iinic/iinic.h \
+				sensors_config.c sensors_config.h \
+				*.h */*.h */*/*.h \
+				$(PROGNAME).c
+	$(CC) $(CFLAGS) iinic/iinic.c sensors_config.c $(PROGNAME).c -o $@
 
 clean:
 	$(RM) $(PROGNAME) $(PROGNAME).bin $(PROGNAME).hex
