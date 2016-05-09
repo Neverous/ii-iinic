@@ -41,9 +41,6 @@ void iinic_main(void)
     NOTICE( "\r\n\n[" TIME_FMT "] Hello World! My MAC is 0x%04x\r\n",
             TIME_FMT_DATA(time), iinic_mac);
 
-    DEBUG(  "[" TIME_FMT "] sensor_config[%d]: seed=%d\r\n",
-            TIME_FMT_DATA(time), sensor_id, sensor_config_get_seed(sensor_id));
-
     on_init(&time, MAIN_EVENT);
 
     // INITIALIZATION

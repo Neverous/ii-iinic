@@ -55,8 +55,8 @@ enum Settings
 #define SETTINGS_MESSAGES_ENABLE                                            \
     REGISTER_MESSAGE(DISCOVERY,         Discovery,          CONSTANT,   0)  \
     REGISTER_MESSAGE(SYNCHRONIZATION,   Synchronization,    CONSTANT,   1)  \
-    REGISTER_MESSAGE(NEIGHBOURS,        Neighbours,         CONSTANT,   2)
-//    REGISTER_MESSAGE(BACKOFF,           Backoff,            CONSTANT,   3)
+    REGISTER_MESSAGE(NEIGHBOURS,        Neighbours,         CONSTANT,   2)  \
+    REGISTER_MESSAGE(BACKOFF,           Backoff,            CONSTANT,   3)
 //    REGISTER_MESSAGE(GATHER,            Gather,             VARIABLE,   0)
 
 #endif // __CONFIG_H__
