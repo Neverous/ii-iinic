@@ -31,6 +31,7 @@ typedef const iinic_timing const iinic_timing_cptr;
 
 void time_align(Time *current, int32_t alignment);
 void time_add_i32(Time *time, int32_t value);
+int8_t time_cmp(Time_cptr *time1, Time_cptr *time2);
 int8_t time_cmp_now(Time_cptr *time);
 void time_get_now(Time *time);
 uint8_t timed_poll(uint8_t mask, Time_cptr *until);
@@ -58,6 +59,12 @@ void time_align(Time *current, int32_t alignment)
 void time_add_i32(Time *time, int32_t value)
 {
     iinic_timing_add_32((iinic_timing *) time, value);
+}
+
+int8_t time_cmp(Time_cptr *time1, Time_cptr *time2)
+{
+    return iinic_timing_cmp((iinic_timing_cptr *) time1,
+                            (iinic_timing_cptr *) time2);
 }
 
 int8_t time_cmp_now(Time_cptr *time)

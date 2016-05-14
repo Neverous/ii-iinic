@@ -34,7 +34,7 @@ void on_slot_end_MessageNeighbours( __unused__ Time_cptr *slot_end,
 {
 }
 
-void on_frame_end_MessageNeighbours(__unused__ Time_cptr *slot_end,
+void on_frame_end_MessageNeighbours(__unused__ Time_cptr *frame_end,
                                     __unused__ const uint8_t options)
 {
     if(!neighbours_ttl)

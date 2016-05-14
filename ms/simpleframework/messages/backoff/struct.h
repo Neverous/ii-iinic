@@ -7,8 +7,18 @@ typedef struct MessageBackoff
 {
     MessageBackoffBase base;
 
-    uint16_t macaddr;
-    uint8_t payload[16];
+    uint8_t seq_id;
+    uint16_t src_macaddr;
+    uint16_t dest_macaddr;
+    uint8_t payload[SETTINGS_BACKOFF_PAYLOAD_SIZE];
 } MessageBackoff;
+
+typedef struct MessageBackoffAck
+{
+    MessageBackoffAckBase base;
+
+    uint16_t src_macaddr;
+    uint16_t dest_macaddr;
+} MessageBackoffAck;
 
 #endif // __MESSAGE_BACKOFF_STRUCT_H__

@@ -163,9 +163,14 @@ void handle_MessageSynchronization( Time_cptr *time, const uint16_t rssi,
         msg->root_macaddr > root.macaddr ||             // Is it even root
         (msg->root_macaddr == root.macaddr &&           // If so, is it newer
          (int16_t) (msg->seq_id - clock.seq_id) <= 0))  // than before
+    {
+        // Handle also like discovery message
+        handle_MessageDiscovery(
+            time, rssi, (MessageDiscovery *) msg, options | DISCOVERY_NO_ROOT);
         return;
+    }
 
-    // Handle like discovery message
+    // Handle also like discovery message
     handle_MessageDiscovery(time, rssi, (MessageDiscovery *) msg, options);
 
     add_sync_point(time, &msg->global_time, msg->seq_id, msg->root_macaddr);
@@ -462,7 +467,7 @@ void calculate_clock(Time_cptr *time)
         break;
     }
 
-    for(int s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+    for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(sync_point[s].state != STATE_VALID)
             continue;
@@ -492,7 +497,7 @@ void calculate_clock(Time_cptr *time)
     local_sum = 0;
     offset_sum = 0;
 
-    for(int s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+    for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(sync_point[s].state != STATE_VALID)
             continue;

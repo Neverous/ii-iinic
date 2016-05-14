@@ -8,7 +8,7 @@
 enum Settings
 {
     // GLOBAL
-    SETTINGS_MAX_NEIGHBOURS             = 16,
+    SETTINGS_MAX_SENSORS                = 16,
 
     // RADIO
     SETTINGS_RADIO_BITRATE              = IINIC_BITRATE_115200,
@@ -21,7 +21,7 @@ enum Settings
     SETTINGS_TXBUFFER_SIZE              = 256,
 
     // INITIALIZATION
-    SETTINGS_INITIALIZATION_FRAMES      = 32,
+    SETTINGS_INITIALIZATION_FRAMES      = 64,
     SETTINGS_INITIALIZATION_FRAME_TIME  = 524288LU,
 
     // TDMA
@@ -32,10 +32,10 @@ enum Settings
     SETTINGS_DISCOVERY_PERIOD           = 1,    // Disabled after initialization
                                                 // works with synchronization
     SETTINGS_ROOT_TIME                  = 16,
-    SETTINGS_ROOT_TTL                   = 128,
+    SETTINGS_ROOT_TTL                   = 255,
 
     // SYNCHRONIZATION
-    SETTINGS_SYNCHRONIZATION_PERIOD     = 128,
+    SETTINGS_SYNCHRONIZATION_PERIOD     = 64,
     SETTINGS_SYNCHRONIZATION_POINTS     = 8,
 
     // NEIGHBOURS
@@ -43,6 +43,7 @@ enum Settings
 
     // BACKOFF
     SETTINGS_BACKOFF_PAYLOAD_SIZE       = 8,
+    SETTINGS_BACKOFF_TRIES_LIMIT        = 8,
 
     // GATHER
     SETTINGS_GATHER_PERIOD              = 32,
@@ -56,7 +57,8 @@ enum Settings
     REGISTER_MESSAGE(DISCOVERY,         Discovery,          CONSTANT,   0)  \
     REGISTER_MESSAGE(SYNCHRONIZATION,   Synchronization,    CONSTANT,   1)  \
     REGISTER_MESSAGE(NEIGHBOURS,        Neighbours,         CONSTANT,   2)  \
-    REGISTER_MESSAGE(BACKOFF,           Backoff,            CONSTANT,   3)
+    REGISTER_MESSAGE(BACKOFF,           Backoff,            CONSTANT,   3)  \
+    REGISTER_MESSAGE(BACKOFFACK,        BackoffAck,         CONSTANT,   4)
 //    REGISTER_MESSAGE(GATHER,            Gather,             VARIABLE,   0)
 
 #endif // __CONFIG_H__

@@ -15,7 +15,7 @@ DUDE      	:= sudo avrdude -p $(DUDEMCU) -c stk500v2 -P usb -q -q
 
 PWD			= $(shell pwd)
 
-CFLAGS		:= -DF_CPU=14745600 -DNDEBUG -Os -flto -std=gnu11 -mmcu=$(MCU) \
+CFLAGS		:= -DF_CPU=14745600 -DNDEBUG -Os -std=gnu11 -mmcu=$(MCU) \
 				-fpack-struct -fshort-enums -funsigned-char -funsigned-bitfields \
 				-ffunction-sections -ffast-math -fdata-sections -Wl,--gc-sections \
 				-Wall -Wextra -Wshadow -Werror -Wl,-u,vfprintf -lprintf_flt -I$(PWD)

@@ -4,20 +4,12 @@
 #include <stdlib.h>
 
 #include "struct.h"
+#include "neighbours.h"
 
-typedef struct Neighbour
-{
-    uint16_t    macaddr;
-    uint8_t     ttl;
-} Neighbour;
-
-Neighbour neighbour[SETTINGS_MAX_NEIGHBOURS];
+Neighbour neighbour[SETTINGS_MAX_SENSORS];
 Neighbour root;
 
 uint8_t send_discovery_msg;
-
-void check_neighbours(Time_cptr *time);
-void update_neighbour(Time_cptr *time, uint16_t macaddr, uint8_t ttl);
 
 void on_init_MessageDiscovery(Time_cptr *time, const uint8_t options)
 {
@@ -106,7 +98,7 @@ void on_slot_end_MessageDiscovery(  __unused__ Time_cptr *slot_end,
 {
 }
 
-void on_frame_end_MessageDiscovery( __unused__ Time_cptr *slot_end,
+void on_frame_end_MessageDiscovery( __unused__ Time_cptr *frame_end,
                                     __unused__ const uint8_t options)
 {
 }
@@ -119,18 +111,21 @@ void handle_MessageDiscovery(   Time_cptr *time, const uint16_t rssi,
             " macaddr=0x%04x root_macaddr=0x%04x\r\n", TIME_FMT_DATA(*time),
             options, rssi, msg->macaddr, msg->root_macaddr);
 
-    if(root.macaddr > msg->root_macaddr &&
-        (root.macaddr != iinic_mac || root.ttl == 0))
+    if(!(options & DISCOVERY_NO_ROOT))
     {
-        NOTICE( "[" TIME_FMT "] Found new root macaddr=0x%04x\r\n",
-                TIME_FMT_DATA(*time), msg->root_macaddr);
+        if( root.macaddr > msg->root_macaddr &&
+            (root.macaddr != iinic_mac || root.ttl == 0))
+        {
+            NOTICE( "[" TIME_FMT "] Found new root macaddr=0x%04x\r\n",
+                    TIME_FMT_DATA(*time), msg->root_macaddr);
 
-        root.macaddr = msg->root_macaddr;
-        root.ttl = SETTINGS_ROOT_TTL;
+            root.macaddr = msg->root_macaddr;
+            root.ttl = SETTINGS_ROOT_TTL;
+        }
+
+        if(root.macaddr == msg->root_macaddr)
+            root.ttl = SETTINGS_ROOT_TTL;
     }
-
-    if(root.macaddr == msg->root_macaddr)
-        root.ttl = SETTINGS_ROOT_TTL;
 
     update_neighbour(time, msg->macaddr, SETTINGS_ROOT_TTL);
 }
@@ -148,54 +143,6 @@ uint8_t *write_MessageDiscovery(__unused__ Time_cptr *time,
     msg->macaddr            = iinic_mac;
     msg->root_macaddr       = root.macaddr;
     return (uint8_t *) (msg + 1);
-}
-
-void check_neighbours(Time_cptr *time)
-{
-    for(uint8_t n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-    {
-        if(!neighbour[n].ttl)
-            continue;
-
-        -- neighbour[n].ttl;
-        if(!neighbour[n].ttl)
-        {
-            NOTICE( "[" TIME_FMT "] dropping neighbour 0x%04x\r\n",
-                    TIME_FMT_DATA(*time), neighbour[n].macaddr);
-        }
-    }
-}
-
-void update_neighbour(Time_cptr *time, uint16_t macaddr, uint8_t ttl)
-{
-    for(uint8_t n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-    {
-        if(!neighbour[n].ttl)
-            continue;
-
-        if(neighbour[n].macaddr == macaddr)
-        {
-            neighbour[n].ttl = ttl;
-            return;
-        }
-    }
-
-    // NEW NEIGHBOUR
-    NOTICE( "[" TIME_FMT "] Adding new neighbour 0x%04x\r\n",
-            TIME_FMT_DATA(*time), macaddr);
-
-    for(uint8_t n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-    {
-        if(neighbour[n].ttl)
-            continue;
-
-        neighbour[n].macaddr = macaddr;
-        neighbour[n].ttl = ttl;
-        return;
-    }
-
-    WARNING("[" TIME_FMT "] Maximum number of neighbours found!\r\n",
-            TIME_FMT_DATA(*time));
 }
 
 #endif // __MESSAGE_DISCOVERY_H__

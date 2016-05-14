@@ -19,9 +19,11 @@ Zbiór przydatnych informacji.
 * Daje to teoretycznie przepustowość **225B/s** na urządzenie rzeczywista wychodzi ok. **100B/s**
 
 
-* Aktualne zużycie pamięci na program i RAM: code: **13466 bytes** (**41%**); ram: **914 bytes** (**44%**)
+* Aktualne zużycie pamięci na program i RAM: code: **20266 bytes** (**61%**); ram: **1263 bytes** (**61%**)
 
 
-* Wiadomość wykrywania sąsiadów ([discovery](../messages/discovery.h)) waży **7B** {kind:**1B**, macaddr: **2B**, root_macaddr: **2B**, crc: **2B**}
-* Wiadomość synchronizacji czasu ([synchronization](../messages/synchronization.h)) waży **15B** {kind: **1B**, macaddr: **2B**, root_macaddr: **2B**, seq_id: **2B**, global_time: **6B**, crc: **2B**}
-* Wiadomość pokazywania sąsiadów ([neighbours](../messages/neighbours.h)) waży **5B** {kind: **1B**, macaddr: **2B**, crc: **2B**}
+* Wiadomość wykrywania sąsiadów ([discovery](../messages/discovery)) waży **7B** {kind:**1B**, macaddr: **2B**, root_macaddr: **2B**, crc: **2B**}
+* Wiadomość synchronizacji czasu ([synchronization](../messages/synchronization)) waży **15B** {kind: **1B**, macaddr: **2B**, root_macaddr: **2B**, seq_id: **2B**, global_time: **6B**, crc: **2B**}
+* Wiadomość pokazywania sąsiadów ([neighbours](../messages/neighbours)) waży **5B** {kind: **1B**, macaddr: **2B**, crc: **2B**}
+* Wiadomość backoff ([backoff](../messages/backoff)) waży **16B** {kind: **1B**, seq_id: **1B**, src_macaddr: **2B**, dest_macaddr: **2B**, payload: **8B**, crc: **2B**}
+* Wiadomość backoffack ([backoff](../messages/backoff)) waży **7B** {kind: **1B**, src_macaddr: **2B**, dest_macaddr: **2B**, crc: **2B**}
