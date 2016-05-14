@@ -75,7 +75,7 @@ void tdma_loop(void)
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
 
-    tdma_slot = random() % SETTINGS_TDMA_SLOTS;
+    tdma_slot = get_sensor_id(iinic_mac);
     Time loop_start; time_get_now(&loop_start);
 
     NOTICE("\r\n[" TIME_FMT "] :: Running TDMA\r\n", TIME_FMT_DATA(loop_start));
