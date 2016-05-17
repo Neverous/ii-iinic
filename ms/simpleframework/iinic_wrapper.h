@@ -38,7 +38,7 @@ uint8_t timed_poll(uint8_t mask, Time_cptr *until);
 void time_add(Time *a, Time_cptr *b);
 void time_sub(Time *a, Time_cptr *b);
 
-uint16_t crc16(const uint8_t const *buf, uint16_t len);
+uint16_t crc16(uint8_t_cptr *buf, uint16_t len);
 
 
 void time_align(Time *current, int32_t alignment)

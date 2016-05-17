@@ -46,8 +46,10 @@ enum Settings
     SETTINGS_BACKOFF_TRIES_LIMIT        = 8,
 
     // GATHER
-    SETTINGS_GATHER_PERIOD              = 32,
-    SETTINGS_GATHER_CYCLES              = 4,
+    SETTINGS_GATHER_PERIOD              = 128,
+    SETTINGS_GATHER_CYCLE               = 32,
+    SETTINGS_GATHER_MESSAGE_TTL         = 16,
+    SETTINGS_GATHER_REQUEST_TTL         = 16,
 };
 
 #define DEBUG_LEVEL                 3
@@ -58,7 +60,8 @@ enum Settings
     REGISTER_MESSAGE(SYNCHRONIZATION,   Synchronization,    CONSTANT,   1)  \
     REGISTER_MESSAGE(NEIGHBOURS,        Neighbours,         CONSTANT,   2)  \
     REGISTER_MESSAGE(BACKOFF,           Backoff,            CONSTANT,   3)  \
-    REGISTER_MESSAGE(BACKOFFACK,        BackoffAck,         CONSTANT,   4)
-//    REGISTER_MESSAGE(GATHER,            Gather,             VARIABLE,   0)
+    REGISTER_MESSAGE(BACKOFFACK,        BackoffAck,         CONSTANT,   4)  \
+    REGISTER_MESSAGE(GATHER_REQUEST,    GatherRequest,      CONSTANT,   5)  \
+    REGISTER_MESSAGE(GATHER,            Gather,             VARIABLE,   0)
 
 #endif // __CONFIG_H__

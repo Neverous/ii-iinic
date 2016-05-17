@@ -2,6 +2,7 @@
 #define __PROTOCOL_HANDLERS_H__
 
 #include <stdint.h>
+#include <string.h>
 
 #include "common.h"
 #include "structs.h"
@@ -193,5 +194,17 @@ SETTINGS_MESSAGES_ENABLE
 
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
+
+void put_message(uint8_t_cptr *msg, uint16_t bytes_no)
+{
+    uint8_t_cptr *txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;
+    if(txbuffer_ptr + bytes_no + 2 > txbuffer_end)
+        return;
+
+    memcpy(txbuffer_ptr, msg, bytes_no);
+    uint8_t *bytes_end = txbuffer_ptr + bytes_no;
+    *(uint16_t *) bytes_end = crc16(txbuffer_ptr, bytes_no);
+    txbuffer_ptr = bytes_end + 2;
+}
 
 #endif // __PROTOCOL_HANDLERS_H__

@@ -27,3 +27,5 @@ Zbiór przydatnych informacji.
 * Wiadomość pokazywania sąsiadów ([neighbours](../messages/neighbours)) waży **5B** {kind: **1B**, macaddr: **2B**, crc: **2B**}
 * Wiadomość backoff ([backoff](../messages/backoff)) waży **16B** {kind: **1B**, seq_id: **1B**, src_macaddr: **2B**, dest_macaddr: **2B**, payload: **8B**, crc: **2B**}
 * Wiadomość backoffack ([backoff](../messages/backoff)) waży **7B** {kind: **1B**, src_macaddr: **2B**, dest_macaddr: **2B**, crc: **2B**}
+* Wiadomość gather ([gather](../messages/gather)) waży **6+B** {kind: **1B**, ttl: **1B**, stats[]: **+B**, crc: **2B**}
+* Wiadomość gather_request ([gather_request](../messages/gather)) waży **4B** {kind: **1B**, ttl: **1B**, crc: **2B**}

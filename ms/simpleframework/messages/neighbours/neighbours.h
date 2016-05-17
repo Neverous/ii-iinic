@@ -61,7 +61,7 @@ void handle_MessageNeighbours(  Time_cptr *time, const uint16_t rssi,
 
 uint8_t *write_MessageNeighbours(   __unused__ Time_cptr *time,
                                     uint8_t *buffer_start,
-                                    const uint8_t const *buffer_end,
+                                    uint8_t_cptr *buffer_end,
                                     __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageNeighbours) > buffer_end)

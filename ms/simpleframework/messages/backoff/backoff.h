@@ -6,6 +6,7 @@
 #include "messages/discovery/neighbours.h"
 #include "sensors_config.h"
 #include "struct.h"
+#include "stats.h"
 
 struct
 {
@@ -17,15 +18,9 @@ struct
     uint8_t     seq_id;
 } backoff;
 
-struct
-{
-    uint16_t sent[SETTINGS_MAX_SENSORS];
-    uint16_t received[SETTINGS_MAX_SENSORS];
-    uint16_t ack[SETTINGS_MAX_SENSORS][SETTINGS_BACKOFF_TRIES_LIMIT];
-} backoff_stats;
+BackoffStats backoff_stats;
 
 uint16_t get_random_neighbour_macaddr(void);
-void show_backoff_stats(Time_cptr *time);
 
 void on_init_MessageBackoff(Time_cptr *time,
                             const uint8_t options)
@@ -96,7 +91,7 @@ void on_slot_start_MessageBackoff(  Time_cptr *slot_start,
     time_add_i32(   &backoff.next_try,
                     (1 << backoff.tries_count) * SETTINGS_TDMA_FRAME_TIME);
     put_MessageBackoff(slot_start, (uint8_t *) &backoff.dest_macaddr);
-    show_backoff_stats(slot_start);
+    show_backoff_stats(slot_start, &backoff_stats);
 }
 
 void on_slot_start_MessageBackoffAck(   __unused__ Time_cptr *slot_start,
@@ -147,7 +142,7 @@ void handle_MessageBackoff( Time_cptr *time,
     ++ backoff_stats.received[src_sensor_id];
     backoff.last_received[src_sensor_id] = msg->seq_id;
     put_MessageBackoffAck(time, (uint8_t *) &msg->src_macaddr);
-    show_backoff_stats(time);
+    show_backoff_stats(time, &backoff_stats);
 }
 
 void handle_MessageBackoffAck(  Time_cptr *time,
@@ -177,7 +172,7 @@ void handle_MessageBackoffAck(  Time_cptr *time,
 
 uint8_t *write_MessageBackoff(  __unused__ Time_cptr *time,
                                 uint8_t *buffer_start,
-                                const uint8_t const *buffer_end,
+                                uint8_t_cptr *buffer_end,
                                 uint8_t *macaddr)
 {
     if(buffer_start + sizeof(MessageBackoff) > buffer_end)
@@ -193,7 +188,7 @@ uint8_t *write_MessageBackoff(  __unused__ Time_cptr *time,
 
 uint8_t *write_MessageBackoffAck(   __unused__ Time_cptr *time,
                                     uint8_t *buffer_start,
-                                    const uint8_t const *buffer_end,
+                                    uint8_t_cptr *buffer_end,
                                     uint8_t *macaddr)
 {
     if(buffer_start + sizeof(MessageBackoffAck) > buffer_end)
@@ -223,24 +218,24 @@ uint16_t get_random_neighbour_macaddr(void)
     return -1;
 }
 
-void show_backoff_stats(Time_cptr *time)
+void show_backoff_stats(Time_cptr *time, BackoffStats *stats)
 {
     NOTICE("[" TIME_FMT "] backoff stats", TIME_FMT_DATA(*time));
     NOTICE("\r\n    sent: ");
     for(uint8_t s = 0; s < SETTINGS_MAX_SENSORS; ++ s)
-        NOTICE("%d ", backoff_stats.sent[s]);
+        NOTICE("%d ", stats->sent[s]);
 
     NOTICE("\r\n    ack:");
     for(uint8_t s = 0; s < SETTINGS_MAX_SENSORS; ++ s)
     {
         NOTICE("\r\n        ");
         for(uint8_t t = 0; t < SETTINGS_BACKOFF_TRIES_LIMIT; ++ t)
-            NOTICE("%d ", backoff_stats.ack[s][t]);
+            NOTICE("%d ", stats->ack[s][t]);
     }
 
     NOTICE("\r\n    received: ");
     for(uint8_t s = 0; s < SETTINGS_MAX_SENSORS; ++ s)
-        NOTICE("%d ", backoff_stats.received[s]);
+        NOTICE("%d ", stats->received[s]);
 
     NOTICE("\r\n");
 }

@@ -80,6 +80,8 @@ uint8_t message_get_kind(MessageBase_VARIABLE_cptr *msg);
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 
+void put_message(uint8_t_cptr *msg, uint16_t bytes_no);
+
 bool message_is_variable_size(Message_cptr *msg)
 {
     return (msg->kind & SIZE_MASK) == SIZE_VARIABLE;
