@@ -6,8 +6,8 @@
 
 typedef struct SensorConfig
 {
-    uint16_t macaddr;
-    uint8_t backoff_ppb;
+    uint16_t    macaddr;
+    uint8_t     backoff_ppb;
 } SensorConfig;
 
 extern const SensorConfig sensor_config[SENSORS_COUNT];

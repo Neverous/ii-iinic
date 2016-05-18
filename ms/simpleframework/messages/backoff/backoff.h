@@ -85,7 +85,6 @@ void on_slot_start_MessageBackoff(  Time_cptr *slot_start,
         return;
 
     ++ backoff_stats.sent[dest_sensor_id];
-
     ++ backoff.tries_count;
     backoff.next_try = *slot_start;
     time_add_i32(   &backoff.next_try,
@@ -125,7 +124,7 @@ void handle_MessageBackoff( Time_cptr *time,
                             MessageBackoff_cptr *msg,
                             const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] Got backoff message options=0x%02x rssi=%u "
+    DEBUG(  "[" TIME_FMT "] Got backoff message options=0x%02x rssi=%u "
             "src_macaddr=0x%04x dest_macaddr=0x%04x\r\n", TIME_FMT_DATA(*time),
             options, rssi, msg->src_macaddr, msg->dest_macaddr);
 
@@ -150,7 +149,7 @@ void handle_MessageBackoffAck(  Time_cptr *time,
                                 MessageBackoffAck_cptr *msg,
                                 const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] Got backoffack message options=0x%02x rssi=%u "
+    DEBUG(  "[" TIME_FMT "] Got backoffack message options=0x%02x rssi=%u "
             "src_macaddr=0x%04x dest_macaddr=0x%04x\r\n", TIME_FMT_DATA(*time),
             options, rssi, msg->src_macaddr, msg->dest_macaddr);
 
@@ -176,7 +175,7 @@ uint8_t *write_MessageBackoff(  __unused__ Time_cptr *time,
                                 uint8_t *macaddr)
 {
     if(buffer_start + sizeof(MessageBackoff) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageBackoff *msg = (MessageBackoff *) buffer_start;
     msg->base.kind      = KIND_BACKOFF;
@@ -192,7 +191,7 @@ uint8_t *write_MessageBackoffAck(   __unused__ Time_cptr *time,
                                     uint8_t *macaddr)
 {
     if(buffer_start + sizeof(MessageBackoffAck) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageBackoffAck *msg = (MessageBackoffAck *) buffer_start;
     msg->base.kind      = KIND_BACKOFFACK;
@@ -203,6 +202,9 @@ uint8_t *write_MessageBackoffAck(   __unused__ Time_cptr *time,
 
 uint16_t get_random_neighbour_macaddr(void)
 {
+    if(!get_neighbours_count())
+        return -1;
+
     uint8_t _neighbour = random() % get_neighbours_count();
     for(uint8_t n = 0; n < SETTINGS_MAX_SENSORS; ++ n)
     {

@@ -38,7 +38,7 @@ void initialization_speak_until(Time_cptr *now, Time_cptr *until)
     DEBUG(  "[" TIME_FMT "] speaking until " TIME_FMT "\r\n",
             TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
 
-    NOTICE( "[" TIME_FMT "] sending %d bytes\r\n",
+    DEBUG(  "[" TIME_FMT "] sending %u bytes\r\n",
             TIME_FMT_DATA(*now),
             txbuffer_ptr - txbuffer);
 

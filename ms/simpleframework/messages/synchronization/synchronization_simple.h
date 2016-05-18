@@ -122,12 +122,12 @@ void on_frame_end_MessageSynchronization(   __unused__ Time_cptr *frame_end,
 {
 }
 
-uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
+void handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
                                         MessageSynchronization *msg,
                                         const uint8_t options)
 {
     Time global_time; time_local_to_global(&global_time, time);
-    NOTICE( "[" TIME_FMT "] Got synchronization message options=0x%02x rssi=%u"
+    DEBUG(  "[" TIME_FMT "] Got synchronization message options=0x%02x rssi=%u"
             " macaddr=0x%04x root_macaddr=0x%04x seq_id=%u"
             " global_time=" TIME_FMT " current_global_time=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), options, rssi, msg->macaddr,
@@ -138,13 +138,13 @@ uint8_t handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
         msg->root_macaddr > root.macaddr ||             // Is it even root
         (msg->root_macaddr == root.macaddr &&           // If so, is it newer
          (int16_t) (msg->seq_id - clock.seq_id) <= 0))  // than before
-        return 0;
+        return;
 
     // Handle like discovery message
     handle_MessageDiscovery(time, rssi, (MessageDiscovery *) msg, options);
 
     calculate_clock(time, &msg->global_time, msg->seq_id);
-    return 0;
+    return;
 }
 
 uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
@@ -152,7 +152,7 @@ uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
                                         __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageSynchronization) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageSynchronization *msg = (MessageSynchronization *) buffer_start;
     msg->base.kind              = KIND_SYNCHRONIZATION;

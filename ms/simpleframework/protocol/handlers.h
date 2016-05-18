@@ -121,15 +121,16 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
                         uint8_t *buffer_ptr, uint8_t_cptr *buffer_end,
                         const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] read %d bytes\r\n",
+    DEBUG(  "[" TIME_FMT "] read %u bytes\r\n",
             TIME_FMT_DATA(*time), buffer_end - buffer_ptr);
 
+    uint8_t count = 0;
     while(buffer_ptr < buffer_end)
     {
         Message_cptr *msg = (Message_cptr *) buffer_ptr;
         if(!validate_message_size(msg, &buffer_ptr))
         {
-            WARNING("[" TIME_FMT "] skipping message byte: unknown kind %u\r\n",
+            DEBUG(  "[" TIME_FMT "] skipping message byte: unknown kind %u\r\n",
                     TIME_FMT_DATA(*time), msg->kind);
 
             ++ buffer_ptr;
@@ -139,7 +140,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
         buffer_ptr += 2; // for CRC
         if(buffer_ptr > buffer_end)
         {
-            WARNING("[" TIME_FMT "] dropping messages: buffer overflow\r\n",
+            DEBUG("[" TIME_FMT "] dropping messages: buffer overflow\r\n",
                     TIME_FMT_DATA(*time));
 
             return false;
@@ -148,7 +149,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
         // Validate CRC
         if(crc16((uint8_t_cptr *) msg, buffer_ptr - (uint8_t_cptr *) msg))
         {
-            WARNING("[" TIME_FMT "] dropping message: invalid crc\r\n",
+            DEBUG("[" TIME_FMT "] dropping message: invalid crc\r\n",
                     TIME_FMT_DATA(*time));
 
             continue;
@@ -170,8 +171,11 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
         }
+
+        ++ count;
     }
 
+    NOTICE("[" TIME_FMT "] read %u messages\r\n", TIME_FMT_DATA(*time), count);
     return true;
 }
 
@@ -181,11 +185,14 @@ SETTINGS_MESSAGES_ENABLE
         uint8_t_cptr *txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;     \
         uint8_t *message_end = write_Message ## Name(   time, txbuffer_ptr, \
                                                         txbuffer_end, ctx); \
-        if(!message_end)                                                    \
+        if( !message_end ||                                                 \
+            message_end + 2 > txbuffer_end ||                               \
+            message_end == txbuffer_ptr)                                    \
+        {                                                                   \
+            WARNING("[" TIME_FMT "] couldn't write %u message to buffer\r\n", \
+                    TIME_FMT_DATA(*time), KIND_ ## NAME);                   \
             return;                                                         \
-                                                                            \
-        if(message_end + 2 > txbuffer_end)                                  \
-            return;                                                         \
+        }                                                                   \
                                                                             \
         *(uint16_t *) message_end = crc16(  txbuffer_ptr,                   \
                                             message_end - txbuffer_ptr);    \
@@ -199,7 +206,10 @@ void put_message(uint8_t_cptr *msg, uint16_t bytes_no)
 {
     uint8_t_cptr *txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;
     if(txbuffer_ptr + bytes_no + 2 > txbuffer_end)
+    {
+        WARNING("Couldn't write %u bytes to buffer\r\n", bytes_no + 2);
         return;
+    }
 
     memcpy(txbuffer_ptr, msg, bytes_no);
     uint8_t *bytes_end = txbuffer_ptr + bytes_no;

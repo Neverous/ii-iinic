@@ -46,9 +46,9 @@ enum Settings
     SETTINGS_BACKOFF_TRIES_LIMIT        = 8,
 
     // GATHER
-    SETTINGS_GATHER_PERIOD              = 128,
-    SETTINGS_GATHER_CYCLE               = 32,
-    SETTINGS_GATHER_MESSAGE_TTL         = 16,
+    SETTINGS_GATHER_PERIOD              = 240,
+    SETTINGS_GATHER_CYCLE               = 64,
+    SETTINGS_GATHER_MESSAGE_TTL         = 32,
     SETTINGS_GATHER_REQUEST_TTL         = 16,
 };
 

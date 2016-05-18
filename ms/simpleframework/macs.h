@@ -76,9 +76,6 @@ uint8_t get_sensor_id(uint16_t macaddr)
 
         case SENSOR_16_MAC:
             return 15;
-
-        default:
-            return -1;
     }
 
     return -1;

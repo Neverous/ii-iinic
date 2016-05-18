@@ -107,7 +107,7 @@ void handle_MessageDiscovery(   Time_cptr *time, const uint16_t rssi,
                                 MessageDiscovery_cptr *msg,
                                 const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] Got discovery message options=0x%02x rssi=%u "
+    DEBUG(  "[" TIME_FMT "] Got discovery message options=0x%02x rssi=%u "
             " macaddr=0x%04x root_macaddr=0x%04x\r\n", TIME_FMT_DATA(*time),
             options, rssi, msg->macaddr, msg->root_macaddr);
 
@@ -136,7 +136,7 @@ uint8_t *write_MessageDiscovery(__unused__ Time_cptr *time,
                                 __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageDiscovery) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageDiscovery *msg   = (MessageDiscovery *) buffer_start;
     msg->base.kind          = KIND_DISCOVERY;

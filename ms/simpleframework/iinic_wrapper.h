@@ -3,6 +3,7 @@
 
 #include <util/crc16.h>
 
+#include "common.h"
 #include "config.h"
 #include "iinic/iinic.h"
 

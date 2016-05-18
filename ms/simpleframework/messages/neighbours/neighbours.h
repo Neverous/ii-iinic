@@ -49,7 +49,7 @@ void handle_MessageNeighbours(  Time_cptr *time, const uint16_t rssi,
                                 __unused__ MessageNeighbours_cptr *msg,
                                 const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] Got neighbours message options=0x%02x rssi=%u"
+    DEBUG(  "[" TIME_FMT "] Got neighbours message options=0x%02x rssi=%u"
             " macaddr=0x%04x\r\n", TIME_FMT_DATA(*time), options, rssi,
             msg->macaddr);
 
@@ -65,7 +65,7 @@ uint8_t *write_MessageNeighbours(   __unused__ Time_cptr *time,
                                     __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageNeighbours) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageNeighbours *msg  = (MessageNeighbours *) buffer_start;
     msg->base.kind          = KIND_NEIGHBOURS;

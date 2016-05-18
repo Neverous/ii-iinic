@@ -152,7 +152,7 @@ void handle_MessageSynchronization( Time_cptr *time, const uint16_t rssi,
                                     const uint8_t options)
 {
     Time global_time; time_local_to_global(&global_time, time);
-    NOTICE( "[" TIME_FMT "] Got synchronization message options=0x%02x rssi=%u"
+    DEBUG(  "[" TIME_FMT "] Got synchronization message options=0x%02x rssi=%u"
             " macaddr=0x%04x root_macaddr=0x%04x seq_id=%u"
             " global_time=" TIME_FMT " current_global_time=" TIME_FMT "\r\n",
             TIME_FMT_DATA(*time), options, rssi, msg->macaddr,
@@ -182,7 +182,7 @@ uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
                                         __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageSynchronization) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageSynchronization *msg = (MessageSynchronization *) buffer_start;
     msg->base.kind              = KIND_SYNCHRONIZATION;
@@ -334,8 +334,8 @@ void calculate_clock(Time_cptr *time)
         NOTICE( "[" TIME_FMT "] not enough synchronization points %u\r\n",
                 TIME_FMT_DATA(*time), valid_sync_points);
 #else
-        NOTICE( "[" TIME_FMT "] not enough synchronization points %u"
-                " for full sync\r\n", TIME_FMT_DATA(*time), valid_sync_points);
+        NOTICE( "[" TIME_FMT "] not enough synchronization points for full "
+                " sync %u\r\n", TIME_FMT_DATA(*time), valid_sync_points);
 
         int64_t new_offset      = 0;
         uint16_t new_seq_id     = 0;
@@ -387,6 +387,8 @@ void calculate_clock(Time_cptr *time)
         clock.last_sync.high = new_last_sync >> 32;
 
         clock.seq_id = new_seq_id;
+
+        clock.skew = 0;
 
         just_synced = true;
 
@@ -541,6 +543,14 @@ void calculate_clock(Time_cptr *time)
     clock.offset.high = new_offset >> 32;
 
     clock.skew = new_skew;
+    if(clock.skew < -1 || clock.skew > 1)
+    {
+
+        WARNING("[" TIME_FMT "] invalid clock_skew=%0.9f\r\n",
+                TIME_FMT_DATA(*time), clock.skew);
+        clock.skew = 0;
+    }
+
     clock.last_sync.low = new_last_sync;
     clock.last_sync.high = new_last_sync >> 32;
 

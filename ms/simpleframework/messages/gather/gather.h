@@ -88,7 +88,7 @@ void on_slot_start_MessageGatherRequest(__unused__ Time_cptr *slot_start,
     if(iinic_mac != root.macaddr)
         return;
 
-    if(gather.ttl && (gather.ttl % SETTINGS_GATHER_REQUEST_TTL) == 0)
+    if(gather.ttl && (gather.ttl % (2 * SETTINGS_GATHER_REQUEST_TTL)) == 0)
     {
         uint8_t ttl = SETTINGS_GATHER_REQUEST_TTL;
         put_MessageGatherRequest(slot_start, &ttl);
@@ -131,7 +131,7 @@ void handle_MessageGather(  Time_cptr *time,
                             const uint8_t options)
 {
     uint16_t size = message_get_size(&msg->base);
-    NOTICE( "[" TIME_FMT "] Got gather message options=0x%02x rssi=%u "
+    DEBUG(  "[" TIME_FMT "] Got gather message options=0x%02x rssi=%u "
             "ttl=%d macaddr=0x%04x size=%d\r\n", TIME_FMT_DATA(*time),
             options, rssi, msg->ttl, msg->macaddr, size);
 
@@ -193,7 +193,7 @@ void handle_MessageGatherRequest(   Time_cptr *time,
                                     MessageGatherRequest_cptr *msg,
                                     const uint8_t options)
 {
-    NOTICE( "[" TIME_FMT "] Got gather_request message options=0x%02x rssi=%u "
+    DEBUG(  "[" TIME_FMT "] Got gather_request message options=0x%02x rssi=%u "
             "ttl=%d\r\n", TIME_FMT_DATA(*time), options, rssi, msg->ttl);
 
     if(iinic_mac == root.macaddr)
@@ -216,7 +216,7 @@ uint8_t *write_MessageGather(   __unused__ Time_cptr *time,
                                 __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageGather) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageGather *msg = (MessageGather *) buffer_start;
     message_set_kind(&msg->base, KIND_GATHER);
@@ -266,7 +266,7 @@ uint8_t *write_MessageGatherRequest(__unused__ Time_cptr *time,
                                     uint8_t *ttl)
 {
     if(buffer_start + sizeof(MessageGatherRequest) > buffer_end)
-        return 0;
+        return NULL;
 
     MessageGatherRequest *msg = (MessageGatherRequest *) buffer_start;
     msg->base.kind  = KIND_GATHER_REQUEST;

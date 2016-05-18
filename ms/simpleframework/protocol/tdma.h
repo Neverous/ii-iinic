@@ -42,7 +42,7 @@ void tdma_speak_until(Time_cptr *now, Time_cptr *until)
     DEBUG(  "[" TIME_FMT "] speaking until " TIME_FMT "\r\n",
             TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
 
-    NOTICE( "[" TIME_FMT "] sending %d bytes\r\n",
+    DEBUG(  "[" TIME_FMT "] sending %u bytes\r\n",
             TIME_FMT_DATA(*now), txbuffer_ptr - txbuffer);
 
     uint32_t count = 0;
@@ -60,8 +60,8 @@ void tdma_speak_until(Time_cptr *now, Time_cptr *until)
 
     else
     {
-        DEBUG(  "[" TIME_FMT "] sent %lu times\r\n",
-                TIME_FMT_DATA(*until), count);
+        NOTICE( "[" TIME_FMT "] sent %u bytes %lu times\r\n",
+                TIME_FMT_DATA(*until), txbuffer_ptr - txbuffer, count);
     }
 
     iinic_idle();
@@ -75,7 +75,7 @@ void tdma_loop(void)
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
 
-    tdma_slot = get_sensor_id(iinic_mac);
+    tdma_slot = sensor_id;
     Time loop_start; time_get_now(&loop_start);
 
     NOTICE("\r\n[" TIME_FMT "] :: Running TDMA\r\n", TIME_FMT_DATA(loop_start));
@@ -86,7 +86,7 @@ void tdma_loop(void)
             TIME_FMT_DATA(loop_start),
             SETTINGS_TDMA_FRAME_TIME / SETTINGS_TDMA_SLOTS);
 
-    DEBUG(  "[" TIME_FMT "]    slots_count=%d\r\n",
+    DEBUG(  "[" TIME_FMT "]    slots_count=%u\r\n",
             TIME_FMT_DATA(loop_start), SETTINGS_TDMA_SLOTS);
 
     DEBUG(  "[" TIME_FMT "]    tdma_slot=%u\r\n",
