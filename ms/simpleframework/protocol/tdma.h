@@ -16,24 +16,24 @@ void tdma_loop(void);
 
 
 static
-void tdma_listen_until(Time_cptr *now, Time_cptr *until)
+void tdma_listen_until(Time_cptr now, Time_cptr until)
 {
     DEBUG(  "[" TIME_FMT "] listening until " TIME_FMT "\r\n",
             TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
 
     while(timed_poll(IINIC_RX_COMPLETE, until))
     {
-        handle_messages((Time_cptr *) &iinic_rx_timing, iinic_rx_rssi,
+        handle_messages((Time_cptr) &iinic_rx_timing, iinic_rx_rssi,
                         rxbuffer, iinic_buffer_ptr, TDMA_EVENT);
         iinic_rx();
     }
 }
 
 static
-void tdma_speak_until(Time_cptr *now, Time_cptr *until)
+bool tdma_speak_until(Time_cptr now, Time_cptr until)
 {
     if(txbuffer_ptr == txbuffer)
-        return;
+        return true;
 
     iinic_idle();
     iinic_set_buffer(txbuffer, txbuffer_ptr - txbuffer);
@@ -45,28 +45,19 @@ void tdma_speak_until(Time_cptr *now, Time_cptr *until)
     DEBUG(  "[" TIME_FMT "] sending %u bytes\r\n",
             TIME_FMT_DATA(*now), txbuffer_ptr - txbuffer);
 
-    uint32_t count = 0;
-    while(timed_poll(IINIC_TX_COMPLETE, until))
+    bool time_left = true;
+    if(!timed_poll(IINIC_TX_COMPLETE, until))
     {
-        count ++;
-        iinic_tx();
-    }
-
-    if(!count)
-    {
-        WARNING("[" TIME_FMT "] failed to send any messages\r\n",
+        WARNING("[" TIME_FMT "] failed to send messages\r\n",
                 TIME_FMT_DATA(*until));
+
+        iinic_idle();
+        time_left = false;
     }
 
-    else
-    {
-        NOTICE( "[" TIME_FMT "] sent %u bytes %lu times\r\n",
-                TIME_FMT_DATA(*until), txbuffer_ptr - txbuffer, count);
-    }
-
-    iinic_idle();
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
+    return time_left;
 }
 
 void tdma_loop(void)
@@ -108,19 +99,29 @@ void tdma_loop(void)
             - (int32_t) tdma_slot *
                 (SETTINGS_TDMA_FRAME_TIME / SETTINGS_TDMA_SLOTS));
 
-        Time slot_end = slot_start;
-        time_add_i32(   &slot_end,
-                        SETTINGS_TDMA_FRAME_TIME / SETTINGS_TDMA_SLOTS);
+        Time slot_send_start = slot_start;
+        time_add_i32(
+            &slot_send_start,
+            SETTINGS_TDMA_FRAME_TIME * SETTINGS_TDMA_SLOT_MARGIN /
+            SETTINGS_TDMA_SLOTS / 100);
+
+        Time slot_send_end = slot_send_start;
+        time_add_i32(   &slot_send_end,
+                        SETTINGS_TDMA_FRAME_TIME *
+                        (100 - 2 * SETTINGS_TDMA_SLOT_MARGIN) /
+                        SETTINGS_TDMA_SLOTS / 100);
 
         tdma_listen_until(&frame_start, &slot_start);
 
-        on_slot_start(&slot_start, &slot_end, TDMA_EVENT);
+        on_slot_start(&slot_start, &slot_send_end, TDMA_EVENT);
 
-        tdma_speak_until(&slot_start, &slot_end);
+        tdma_listen_until(&frame_start, &slot_send_start);
 
-        on_slot_end(&slot_end, TDMA_EVENT);
+        tdma_speak_until(&slot_send_start, &slot_send_end);
 
-        tdma_listen_until(&slot_end, &frame_deadline);
+        on_slot_end(&slot_send_end, TDMA_EVENT);
+
+        tdma_listen_until(&slot_send_end, &frame_deadline);
 
         on_frame_end(&frame_deadline, TDMA_EVENT);
 

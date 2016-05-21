@@ -12,24 +12,24 @@ void initialization_loop(void);
 
 
 static
-void initialization_listen_until(Time_cptr *now, Time_cptr *until)
+void initialization_listen_until(Time_cptr now, Time_cptr until)
 {
     DEBUG(  "[" TIME_FMT "] listening until " TIME_FMT "\r\n",
             TIME_FMT_DATA(*now), TIME_FMT_DATA(*until));
 
     while(timed_poll(IINIC_RX_COMPLETE, until))
     {
-        handle_messages((Time_cptr *) &iinic_rx_timing, iinic_rx_rssi,
+        handle_messages((Time_cptr) &iinic_rx_timing, iinic_rx_rssi,
                         rxbuffer, iinic_buffer_ptr, INITIALIZATION_EVENT);
         iinic_rx();
     }
 }
 
 static
-void initialization_speak_until(Time_cptr *now, Time_cptr *until)
+bool initialization_speak_until(Time_cptr now, Time_cptr until)
 {
     if(txbuffer_ptr == txbuffer)
-        return;
+        return true;
 
     iinic_idle();
     iinic_set_buffer(txbuffer, txbuffer_ptr - txbuffer);
@@ -42,16 +42,19 @@ void initialization_speak_until(Time_cptr *now, Time_cptr *until)
             TIME_FMT_DATA(*now),
             txbuffer_ptr - txbuffer);
 
+    bool time_left = true;
     if(!timed_poll(IINIC_TX_COMPLETE, until))
     {
         WARNING("[" TIME_FMT "] failed to send messages\r\n",
                 TIME_FMT_DATA(*until));
 
+        time_left = false;
         iinic_idle();
     }
 
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
+    return time_left;
 }
 
 void initialization_loop(void)
@@ -76,21 +79,23 @@ void initialization_loop(void)
         on_frame_start(&frame_start, &frame_deadline, INITIALIZATION_EVENT);
 
         Time slot_start = frame_deadline;
-        NOTICE( "[" TIME_FMT "] :::: Frame %u\r\n",
-                TIME_FMT_DATA(frame_deadline), r);
-
         time_add_i32(   &slot_start,
-                        random() % SETTINGS_INITIALIZATION_FRAME_TIME);
+                        -(random() % SETTINGS_INITIALIZATION_FRAME_TIME));
+
+        NOTICE( "[" TIME_FMT "] :::: Frame %u\r\n",
+                TIME_FMT_DATA(frame_start), r);
 
         initialization_listen_until(&frame_start, &slot_start);
 
         on_slot_start(&slot_start, &frame_deadline, INITIALIZATION_EVENT);
 
-        initialization_speak_until(&frame_start, &frame_deadline);
+        bool time_left = initialization_speak_until(&frame_start,
+                                                    &frame_deadline);
 
-        on_slot_end(0, INITIALIZATION_EVENT);
+        on_slot_end(&slot_start, INITIALIZATION_EVENT);
 
-        initialization_listen_until(&frame_start, &frame_deadline);
+        if(time_left)
+            initialization_listen_until(&frame_start, &frame_deadline);
 
         on_frame_end(&frame_deadline, INITIALIZATION_EVENT);
 

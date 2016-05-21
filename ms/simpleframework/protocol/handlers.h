@@ -12,36 +12,36 @@
 #error "Missing messages configuration!"
 #endif
 
-void on_init(Time_cptr *time, const uint8_t options);
-void on_frame_start(Time_cptr *frame_start, Time *frame_deadline,
+void on_init(Time_cptr time, const uint8_t options);
+void on_frame_start(Time_cptr frame_start, Time *frame_deadline,
                     const uint8_t options);
 
-void on_slot_start( Time_cptr *slot_start, Time *slot_deadline,
+void on_slot_start( Time_cptr slot_start, Time *slot_deadline,
                     const uint8_t options);
 
-void on_slot_end(Time_cptr *slot_end, const uint8_t options);
-void on_frame_end(Time_cptr *frame_end, const uint8_t options);
+void on_slot_end(Time_cptr slot_end, const uint8_t options);
+void on_frame_end(Time_cptr frame_end, const uint8_t options);
 
-bool handle_messages(   Time_cptr *time, const uint16_t rssi,
-                        uint8_t *buffer_ptr, uint8_t_cptr *buffer_end,
+bool handle_messages(   Time_cptr time, const uint16_t rssi,
+                        uint8_t *buffer_ptr, uint8_t_cptr buffer_end,
                         const uint8_t options);
 
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    void on_init_Message ## Name(Time_cptr *, const uint8_t);               \
-    void on_frame_start_Message ## Name(Time_cptr *, Time *, const uint8_t); \
-    void on_slot_start_Message ## Name(Time_cptr *, Time*, const uint8_t);  \
-    void on_slot_end_Message ## Name(Time_cptr *, const uint8_t);           \
-    void on_frame_end_Message ## Name(Time_cptr *, const uint8_t);          \
-    void handle_Message ## Name(Time_cptr *, const uint16_t,                \
-                                Message ## Name ## _cptr *, const uint8_t); \
-    uint8_t *write_Message ## Name( Time_cptr *, uint8_t *, uint8_t_cptr *, \
+    void on_init_Message ## Name(Time_cptr , const uint8_t);               \
+    void on_frame_start_Message ## Name(Time_cptr , Time *, const uint8_t); \
+    void on_slot_start_Message ## Name(Time_cptr , Time*, const uint8_t);  \
+    void on_slot_end_Message ## Name(Time_cptr , const uint8_t);           \
+    void on_frame_end_Message ## Name(Time_cptr , const uint8_t);          \
+    void handle_Message ## Name(Time_cptr , const uint16_t,                \
+                                Message ## Name ## _cptr , const uint8_t); \
+    uint8_t *write_Message ## Name( Time_cptr , uint8_t *, uint8_t_cptr , \
                                     uint8_t *ctx);
 
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 
-void on_init(Time_cptr *time, const uint8_t options)
+void on_init(Time_cptr time, const uint8_t options)
 {
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
     on_init_Message ## Name(time, options);
@@ -50,7 +50,7 @@ SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 }
 
-void on_frame_start(Time_cptr *frame_start, Time *frame_deadline,
+void on_frame_start(Time_cptr frame_start, Time *frame_deadline,
                     const uint8_t options)
 {
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
@@ -60,7 +60,7 @@ SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 }
 
-void on_slot_start( Time_cptr *slot_start, Time *slot_deadline,
+void on_slot_start( Time_cptr slot_start, Time *slot_deadline,
                     const uint8_t options)
 {
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
@@ -70,7 +70,7 @@ SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 }
 
-void on_slot_end(Time_cptr *slot_end, const uint8_t options)
+void on_slot_end(Time_cptr slot_end, const uint8_t options)
 {
     txbuffer_ptr = txbuffer;
 
@@ -81,7 +81,7 @@ SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 }
 
-void on_frame_end(Time_cptr *frame_end, const uint8_t options)
+void on_frame_end(Time_cptr frame_end, const uint8_t options)
 {
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
     on_frame_end_Message ## Name(frame_end, options);
@@ -91,10 +91,10 @@ SETTINGS_MESSAGES_ENABLE
 }
 
 static
-bool validate_message_size(Message_cptr *msg, uint8_t **buffer_ptr)
+bool validate_message_size(Message_cptr msg, uint8_t **buffer_ptr)
 {
     uint8_t kind = message_is_variable_size(msg) ?
-                    message_get_kind((MessageBase_VARIABLE_cptr *) msg) :
+                    message_get_kind((MessageBase_VARIABLE_cptr) msg) :
                     msg->kind;
 
     switch(kind)
@@ -104,7 +104,7 @@ case KIND_ ## NAME:                                                     \
     if(SIZE_ ## size_type == SIZE_CONSTANT)                             \
         *buffer_ptr += sizeof(struct Message ## Name);                  \
     else                                                                \
-        *buffer_ptr += message_get_size((MessageBase_VARIABLE_cptr *) msg); \
+        *buffer_ptr += message_get_size((MessageBase_VARIABLE_cptr) msg); \
                                                                         \
     break;
 
@@ -117,8 +117,8 @@ SETTINGS_MESSAGES_ENABLE
     return true;
 }
 
-bool handle_messages(   Time_cptr *time, const uint16_t rssi,
-                        uint8_t *buffer_ptr, uint8_t_cptr *buffer_end,
+bool handle_messages(   Time_cptr time, const uint16_t rssi,
+                        uint8_t *buffer_ptr, uint8_t_cptr buffer_end,
                         const uint8_t options)
 {
     DEBUG(  "[" TIME_FMT "] read %u bytes\r\n",
@@ -127,7 +127,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
     uint8_t count = 0;
     while(buffer_ptr < buffer_end)
     {
-        Message_cptr *msg = (Message_cptr *) buffer_ptr;
+        Message_cptr msg = (Message_cptr) buffer_ptr;
         if(!validate_message_size(msg, &buffer_ptr))
         {
             DEBUG(  "[" TIME_FMT "] skipping message byte: unknown kind %u\r\n",
@@ -147,7 +147,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
         }
 
         // Validate CRC
-        if(crc16((uint8_t_cptr *) msg, buffer_ptr - (uint8_t_cptr *) msg))
+        if(crc16((uint8_t_cptr) msg, buffer_ptr - (uint8_t_cptr) msg))
         {
             DEBUG("[" TIME_FMT "] dropping message: invalid crc\r\n",
                     TIME_FMT_DATA(*time));
@@ -156,7 +156,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
         }
 
         uint8_t kind = message_is_variable_size(msg) ?
-                        message_get_kind((MessageBase_VARIABLE_cptr *) msg) :
+                        message_get_kind((MessageBase_VARIABLE_cptr) msg) :
                         msg->kind;
 
         // Handle message
@@ -165,7 +165,7 @@ bool handle_messages(   Time_cptr *time, const uint16_t rssi,
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
     case KIND_ ## NAME:                                                     \
         handle_Message ## Name( time, rssi,                                 \
-                                (Message ## Name ## _cptr *) msg, options); \
+                                (Message ## Name ## _cptr) msg, options); \
         break;
 
 SETTINGS_MESSAGES_ENABLE
@@ -180,9 +180,9 @@ SETTINGS_MESSAGES_ENABLE
 }
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    void put_Message ## Name(Time_cptr *time, uint8_t *ctx)                 \
+    void put_Message ## Name(Time_cptr time, uint8_t *ctx)                 \
     {                                                                       \
-        uint8_t_cptr *txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;     \
+        uint8_t_cptr txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;     \
         uint8_t *message_end = write_Message ## Name(   time, txbuffer_ptr, \
                                                         txbuffer_end, ctx); \
         if( !message_end ||                                                 \
@@ -202,9 +202,9 @@ SETTINGS_MESSAGES_ENABLE
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 
-void put_message(uint8_t_cptr *msg, uint16_t bytes_no)
+void put_message(uint8_t_cptr msg, uint16_t bytes_no)
 {
-    uint8_t_cptr *txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;
+    uint8_t_cptr txbuffer_end = txbuffer + SETTINGS_TXBUFFER_SIZE;
     if(txbuffer_ptr + bytes_no + 2 > txbuffer_end)
     {
         WARNING("Couldn't write %u bytes to buffer\r\n", bytes_no + 2);

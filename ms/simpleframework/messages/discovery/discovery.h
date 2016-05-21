@@ -11,7 +11,7 @@ Neighbour root;
 
 uint8_t send_discovery_msg;
 
-void on_init_MessageDiscovery(Time_cptr *time, const uint8_t options)
+void on_init_MessageDiscovery(Time_cptr time, const uint8_t options)
 {
     switch(options)
     {
@@ -36,7 +36,7 @@ void on_init_MessageDiscovery(Time_cptr *time, const uint8_t options)
     }
 }
 
-void on_frame_start_MessageDiscovery(   Time_cptr *frame_start,
+void on_frame_start_MessageDiscovery(   Time_cptr frame_start,
                                         __unused__ Time *frame_deadline,
                                         const uint8_t options)
 {
@@ -67,7 +67,7 @@ void on_frame_start_MessageDiscovery(   Time_cptr *frame_start,
     check_neighbours(frame_start);
 }
 
-void on_slot_start_MessageDiscovery(Time_cptr *slot_start,
+void on_slot_start_MessageDiscovery(Time_cptr slot_start,
                                     __unused__ Time *slot_end,
                                     const uint8_t options)
 {
@@ -93,18 +93,18 @@ void on_slot_start_MessageDiscovery(Time_cptr *slot_start,
     }
 }
 
-void on_slot_end_MessageDiscovery(  __unused__ Time_cptr *slot_end,
+void on_slot_end_MessageDiscovery(  __unused__ Time_cptr slot_end,
                                     __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageDiscovery( __unused__ Time_cptr *frame_end,
+void on_frame_end_MessageDiscovery( __unused__ Time_cptr frame_end,
                                     __unused__ const uint8_t options)
 {
 }
 
-void handle_MessageDiscovery(   Time_cptr *time, const uint16_t rssi,
-                                MessageDiscovery_cptr *msg,
+void handle_MessageDiscovery(   Time_cptr time, const uint16_t rssi,
+                                MessageDiscovery_cptr msg,
                                 const uint8_t options)
 {
     DEBUG(  "[" TIME_FMT "] Got discovery message options=0x%02x rssi=%u "
@@ -130,7 +130,7 @@ void handle_MessageDiscovery(   Time_cptr *time, const uint16_t rssi,
     update_neighbour(time, msg->macaddr, SETTINGS_ROOT_TTL);
 }
 
-uint8_t *write_MessageDiscovery(__unused__ Time_cptr *time,
+uint8_t *write_MessageDiscovery(__unused__ Time_cptr time,
                                 uint8_t *buffer_start,
                                 const uint8_t const *buffer_end,
                                 __unused__ uint8_t *ctx)

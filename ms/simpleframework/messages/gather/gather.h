@@ -12,19 +12,19 @@ struct
     BackoffStats data;
 } gather;
 
-void on_init_MessageGather( __unused__ Time_cptr *time,
+void on_init_MessageGather( __unused__ Time_cptr time,
                             __unused__ const uint8_t options)
 {
     gather.ttl = 0;
     gather.button = 0;
 }
 
-void on_init_MessageGatherRequest(  __unused__ Time_cptr *time,
+void on_init_MessageGatherRequest(  __unused__ Time_cptr time,
                                     __unused__ const uint8_t options)
 {
 }
 
-void on_frame_start_MessageGather(  Time_cptr *frame_start,
+void on_frame_start_MessageGather(  Time_cptr frame_start,
                                     __unused__ Time *frame_deadline,
                                     const uint8_t options)
 {
@@ -55,7 +55,7 @@ void on_frame_start_MessageGather(  Time_cptr *frame_start,
     gather.button = next;
 }
 
-void on_frame_start_MessageGatherRequest(   __unused__ Time_cptr *frame_start,
+void on_frame_start_MessageGatherRequest(   __unused__ Time_cptr frame_start,
                                             __unused__ Time *frame_deadline,
                                             __unused__ const uint8_t options)
 {
@@ -63,7 +63,7 @@ void on_frame_start_MessageGatherRequest(   __unused__ Time_cptr *frame_start,
         iinic_led_toggle(IINIC_LED_RED);
 }
 
-void on_slot_start_MessageGather(   __unused__ Time_cptr *slot_start,
+void on_slot_start_MessageGather(   __unused__ Time_cptr slot_start,
                                     __unused__ Time *slot_end,
                                     const uint8_t options)
 {
@@ -78,7 +78,7 @@ void on_slot_start_MessageGather(   __unused__ Time_cptr *slot_start,
 
 }
 
-void on_slot_start_MessageGatherRequest(__unused__ Time_cptr *slot_start,
+void on_slot_start_MessageGatherRequest(__unused__ Time_cptr slot_start,
                                         __unused__ Time *slot_end,
                                         const uint8_t options)
 {
@@ -95,22 +95,22 @@ void on_slot_start_MessageGatherRequest(__unused__ Time_cptr *slot_start,
     }
 }
 
-void on_slot_end_MessageGather( __unused__ Time_cptr *slot_end,
+void on_slot_end_MessageGather( __unused__ Time_cptr slot_end,
                                 __unused__ const uint8_t options)
 {
 }
 
-void on_slot_end_MessageGatherRequest(  __unused__ Time_cptr *slot_end,
+void on_slot_end_MessageGatherRequest(  __unused__ Time_cptr slot_end,
                                         __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageGather(__unused__ Time_cptr *frame_end,
+void on_frame_end_MessageGather(__unused__ Time_cptr frame_end,
                                 __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageGatherRequest( Time_cptr *frame_end,
+void on_frame_end_MessageGatherRequest( Time_cptr frame_end,
                                         __unused__ const uint8_t options)
 {
     if(!gather.ttl)
@@ -125,9 +125,9 @@ void on_frame_end_MessageGatherRequest( Time_cptr *frame_end,
     -- gather.ttl;
 }
 
-void handle_MessageGather(  Time_cptr *time,
+void handle_MessageGather(  Time_cptr time,
                             const uint16_t rssi,
-                            MessageGather_cptr *msg,
+                            MessageGather_cptr msg,
                             const uint8_t options)
 {
     uint16_t size = message_get_size(&msg->base);
@@ -149,7 +149,7 @@ void handle_MessageGather(  Time_cptr *time,
 
         MessageGather *wr = (MessageGather *) msg;
         -- wr->ttl;
-        put_message((uint8_t_cptr *) msg, size);
+        put_message((uint8_t_cptr) msg, size);
         return;
     }
 
@@ -188,9 +188,9 @@ void handle_MessageGather(  Time_cptr *time,
     show_backoff_stats(time, &gather.data);
 }
 
-void handle_MessageGatherRequest(   Time_cptr *time,
+void handle_MessageGatherRequest(   Time_cptr time,
                                     const uint16_t rssi,
-                                    MessageGatherRequest_cptr *msg,
+                                    MessageGatherRequest_cptr msg,
                                     const uint8_t options)
 {
     DEBUG(  "[" TIME_FMT "] Got gather_request message options=0x%02x rssi=%u "
@@ -210,9 +210,9 @@ void handle_MessageGatherRequest(   Time_cptr *time,
     put_MessageGatherRequest(time, &ttl);
 }
 
-uint8_t *write_MessageGather(   __unused__ Time_cptr *time,
+uint8_t *write_MessageGather(   __unused__ Time_cptr time,
                                 uint8_t *buffer_start,
-                                uint8_t_cptr *buffer_end,
+                                uint8_t_cptr buffer_end,
                                 __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageGather) > buffer_end)
@@ -260,9 +260,9 @@ uint8_t *write_MessageGather(   __unused__ Time_cptr *time,
     return (uint8_t *) stats;
 }
 
-uint8_t *write_MessageGatherRequest(__unused__ Time_cptr *time,
+uint8_t *write_MessageGatherRequest(__unused__ Time_cptr time,
                                     uint8_t *buffer_start,
-                                    uint8_t_cptr *buffer_end,
+                                    uint8_t_cptr buffer_end,
                                     uint8_t *ttl)
 {
     if(buffer_start + sizeof(MessageGatherRequest) > buffer_end)

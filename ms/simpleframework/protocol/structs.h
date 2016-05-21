@@ -54,35 +54,35 @@ struct MessageBase_VARIABLE
     uint8_t size_low;
 };
 
-typedef const Message const Message_cptr;
-typedef const struct MessageBase_CONSTANT const MessageBase_CONSTANT_cptr;
-typedef const struct MessageBase_VARIABLE const MessageBase_VARIABLE_cptr;
+typedef const Message * const Message_cptr;
+typedef const struct MessageBase_CONSTANT * const MessageBase_CONSTANT_cptr;
+typedef const struct MessageBase_VARIABLE * const MessageBase_VARIABLE_cptr;
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
     typedef struct MessageBase_ ## size_type Message ## Name ## Base;       \
-    typedef const struct Message ## Name const Message ## Name ## _cptr;
+    typedef const struct Message ## Name * const Message ## Name ## _cptr;
 
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 
 
-bool message_is_variable_size(Message_cptr *msg);
+bool message_is_variable_size(Message_cptr msg);
 
 void message_set_size(struct MessageBase_VARIABLE *msg, uint16_t size);
-uint16_t message_get_size(MessageBase_VARIABLE_cptr *msg);
+uint16_t message_get_size(MessageBase_VARIABLE_cptr msg);
 
 void message_set_kind(struct MessageBase_VARIABLE *msg, const uint8_t kind);
-uint8_t message_get_kind(MessageBase_VARIABLE_cptr *msg);
+uint8_t message_get_kind(MessageBase_VARIABLE_cptr msg);
 
 #define REGISTER_MESSAGE(NAME, Name, size_type, id)                         \
-    void put_Message ## Name(Time_cptr *, uint8_t *);
+    void put_Message ## Name(Time_cptr , uint8_t *);
 
 SETTINGS_MESSAGES_ENABLE
 #undef REGISTER_MESSAGE
 
-void put_message(uint8_t_cptr *msg, uint16_t bytes_no);
+void put_message(uint8_t_cptr msg, uint16_t bytes_no);
 
-bool message_is_variable_size(Message_cptr *msg)
+bool message_is_variable_size(Message_cptr msg)
 {
     return (msg->kind & SIZE_MASK) == SIZE_VARIABLE;
 }
@@ -95,7 +95,7 @@ void message_set_size(struct MessageBase_VARIABLE *msg, uint16_t size)
                 | (size & MESSAGE_VARIABLE_SIZE_HIGH_MASK);
 }
 
-uint16_t message_get_size(MessageBase_VARIABLE_cptr *msg)
+uint16_t message_get_size(MessageBase_VARIABLE_cptr msg)
 {
     return (    (uint16_t) (msg->kind & MESSAGE_VARIABLE_SIZE_HIGH_MASK) << 8)
             |   msg->size_low;
@@ -107,7 +107,7 @@ void message_set_kind(struct MessageBase_VARIABLE *msg, const uint8_t kind)
                 | (msg->kind & MESSAGE_VARIABLE_SIZE_HIGH_MASK);
 }
 
-uint8_t message_get_kind(MessageBase_VARIABLE_cptr *msg)
+uint8_t message_get_kind(MessageBase_VARIABLE_cptr msg)
 {
     return msg->kind & MESSAGE_VARIABLE_KIND_MASK;
 }

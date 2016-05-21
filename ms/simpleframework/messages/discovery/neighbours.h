@@ -14,8 +14,8 @@ typedef struct Neighbour
 extern Neighbour neighbour[SETTINGS_MAX_SENSORS];
 
 uint8_t get_neighbours_count(void);
-void check_neighbours(Time_cptr *time);
-void update_neighbour(Time_cptr *time, uint16_t macaddr, uint8_t ttl);
+void check_neighbours(Time_cptr time);
+void update_neighbour(Time_cptr time, uint16_t macaddr, uint8_t ttl);
 
 uint8_t get_neighbours_count(void)
 {
@@ -31,7 +31,7 @@ uint8_t get_neighbours_count(void)
     return count;
 }
 
-void check_neighbours(Time_cptr *time)
+void check_neighbours(Time_cptr time)
 {
     for(uint8_t n = 0; n < SETTINGS_MAX_SENSORS; ++ n)
     {
@@ -47,7 +47,7 @@ void check_neighbours(Time_cptr *time)
     }
 }
 
-void update_neighbour(Time_cptr *time, uint16_t macaddr, uint8_t ttl)
+void update_neighbour(Time_cptr time, uint16_t macaddr, uint8_t ttl)
 {
     for(uint8_t n = 0; n < SETTINGS_MAX_SENSORS; ++ n)
     {

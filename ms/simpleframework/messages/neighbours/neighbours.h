@@ -5,18 +5,18 @@
 
 uint8_t neighbours_ttl;
 
-void on_init_MessageNeighbours( __unused__ Time_cptr *time,
+void on_init_MessageNeighbours( __unused__ Time_cptr time,
                                 __unused__ const uint8_t options)
 {
 }
 
-void on_frame_start_MessageNeighbours(  __unused__ Time_cptr *frame_start,
+void on_frame_start_MessageNeighbours(  __unused__ Time_cptr frame_start,
                                         __unused__ Time *frame_deadline,
                                         __unused__ const uint8_t options)
 {
 }
 
-void on_slot_start_MessageNeighbours(   __unused__ Time_cptr *slot_start,
+void on_slot_start_MessageNeighbours(   __unused__ Time_cptr slot_start,
                                         __unused__ Time *slot_end,
                                         __unused__ const uint8_t options)
 {
@@ -29,12 +29,12 @@ void on_slot_start_MessageNeighbours(   __unused__ Time_cptr *slot_start,
     }
 }
 
-void on_slot_end_MessageNeighbours( __unused__ Time_cptr *slot_end,
+void on_slot_end_MessageNeighbours( __unused__ Time_cptr slot_end,
                                     __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageNeighbours(__unused__ Time_cptr *frame_end,
+void on_frame_end_MessageNeighbours(__unused__ Time_cptr frame_end,
                                     __unused__ const uint8_t options)
 {
     if(!neighbours_ttl)
@@ -45,8 +45,8 @@ void on_frame_end_MessageNeighbours(__unused__ Time_cptr *frame_end,
         iinic_led_off(IINIC_LED_RED);
 }
 
-void handle_MessageNeighbours(  Time_cptr *time, const uint16_t rssi,
-                                __unused__ MessageNeighbours_cptr *msg,
+void handle_MessageNeighbours(  Time_cptr time, const uint16_t rssi,
+                                __unused__ MessageNeighbours_cptr msg,
                                 const uint8_t options)
 {
     DEBUG(  "[" TIME_FMT "] Got neighbours message options=0x%02x rssi=%u"
@@ -59,9 +59,9 @@ void handle_MessageNeighbours(  Time_cptr *time, const uint16_t rssi,
     neighbours_ttl = SETTINGS_NEIGHBOURS_SHOW_TIME;
 }
 
-uint8_t *write_MessageNeighbours(   __unused__ Time_cptr *time,
+uint8_t *write_MessageNeighbours(   __unused__ Time_cptr time,
                                     uint8_t *buffer_start,
-                                    uint8_t_cptr *buffer_end,
+                                    uint8_t_cptr buffer_end,
                                     __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageNeighbours) > buffer_end)

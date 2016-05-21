@@ -12,11 +12,11 @@ enum Settings
 
     // RADIO
     SETTINGS_RADIO_BITRATE              = IINIC_BITRATE_115200,
-    SETTINGS_RADIO_RX                   = IINIC_BW_270
+    SETTINGS_RADIO_RX                   = IINIC_BW_200
                                         | IINIC_GAIN_0
-                                        | IINIC_RSSI_73,
+                                        | IINIC_RSSI_103,
     SETTINGS_RXBUFFER_SIZE              = 384,
-    SETTINGS_RADIO_TX                   = IINIC_DEVIATION_240
+    SETTINGS_RADIO_TX                   = IINIC_DEVIATION_120
                                         | IINIC_POWER_0,
     SETTINGS_TXBUFFER_SIZE              = 256,
 
@@ -27,6 +27,7 @@ enum Settings
     // TDMA
     SETTINGS_TDMA_FRAME_TIME            = 524288LU,
     SETTINGS_TDMA_SLOTS                 = 16,
+    SETTINGS_TDMA_SLOT_MARGIN           = 5,    // time margin in %
 
     // DISCOVERY
     SETTINGS_DISCOVERY_PERIOD           = 1,    // Disabled after initialization

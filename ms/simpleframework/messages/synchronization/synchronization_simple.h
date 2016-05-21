@@ -27,13 +27,13 @@ uint8_t send_sync_msg;
 bool    just_synced;
 #endif // SYNCHRONIZATION_FAST_SYNC
 
-void time_local_to_global(Time *global_time, Time_cptr *local_time);
-void time_global_to_local(Time *local_time, Time_cptr *global_time);
-void calculate_clock(   Time_cptr *time, Time_cptr *global_time,
+void time_local_to_global(Time *global_time, Time_cptr local_time);
+void time_global_to_local(Time *local_time, Time_cptr global_time);
+void calculate_clock(   Time_cptr time, Time_cptr global_time,
                         const uint16_t seq_id);
 
 
-void on_init_MessageSynchronization(__unused__ Time_cptr *time,
+void on_init_MessageSynchronization(__unused__ Time_cptr time,
                                     const uint8_t options)
 {
     switch(options)
@@ -47,7 +47,7 @@ void on_init_MessageSynchronization(__unused__ Time_cptr *time,
     }
 }
 
-void on_frame_start_MessageSynchronization( Time_cptr *frame_start,
+void on_frame_start_MessageSynchronization( Time_cptr frame_start,
                                             Time *frame_end,
                                             const uint8_t options)
 {
@@ -84,7 +84,7 @@ void on_frame_start_MessageSynchronization( Time_cptr *frame_start,
     time_global_to_local(frame_end, &global_time);
 }
 
-void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
+void on_slot_start_MessageSynchronization(  Time_cptr slot_start,
                                             __unused__ Time *slot_end,
                                             const uint8_t options)
 {
@@ -112,17 +112,17 @@ void on_slot_start_MessageSynchronization(  Time_cptr *slot_start,
     send_sync_msg = (send_sync_msg + 1) % SETTINGS_SYNCHRONIZATION_PERIOD;
 }
 
-void on_slot_end_MessageSynchronization(__unused__ Time_cptr *slot_end,
+void on_slot_end_MessageSynchronization(__unused__ Time_cptr slot_end,
                                         __unused__ const uint8_t options)
 {
 }
 
-void on_frame_end_MessageSynchronization(   __unused__ Time_cptr *frame_end,
+void on_frame_end_MessageSynchronization(   __unused__ Time_cptr frame_end,
                                             __unused__ const uint8_t options)
 {
 }
 
-void handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
+void handle_MessageSynchronization(  Time_cptr time, const uint16_t rssi,
                                         MessageSynchronization *msg,
                                         const uint8_t options)
 {
@@ -147,8 +147,8 @@ void handle_MessageSynchronization(  Time_cptr *time, const uint16_t rssi,
     return;
 }
 
-uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
-                                        uint8_t_cptr *buffer_end,
+uint8_t *write_MessageSynchronization(  Time_cptr time, uint8_t *buffer_start,
+                                        uint8_t_cptr buffer_end,
                                         __unused__ uint8_t *ctx)
 {
     if(buffer_start + sizeof(MessageSynchronization) > buffer_end)
@@ -163,7 +163,7 @@ uint8_t *write_MessageSynchronization(  Time_cptr *time, uint8_t *buffer_start,
     return (uint8_t *) (msg + 1);
 }
 
-void time_local_to_global(Time *global_time, Time_cptr *local_time)
+void time_local_to_global(Time *global_time, Time_cptr local_time)
 {
     if(!local_time)
     {
@@ -184,7 +184,7 @@ void time_local_to_global(Time *global_time, Time_cptr *local_time)
             TIME_FMT_DATA(*local_time));
 }
 
-void time_global_to_local(Time *local_time, Time_cptr *global_time)
+void time_global_to_local(Time *local_time, Time_cptr global_time)
 {
     if(!global_time)
     {
@@ -205,7 +205,7 @@ void time_global_to_local(Time *local_time, Time_cptr *global_time)
             TIME_FMT_DATA(*global_time));
 }
 
-void calculate_clock(   Time_cptr *time, Time_cptr *global_time,
+void calculate_clock(   Time_cptr time, Time_cptr global_time,
                         const uint16_t seq_id)
 {
 

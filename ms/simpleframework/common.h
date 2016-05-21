@@ -16,7 +16,7 @@ enum EventTypes
     EVENT_MASK              = 3,
 };
 
-typedef const uint8_t const uint8_t_cptr;
+typedef const uint8_t * const uint8_t_cptr;
 
 
 extern uint8_t rxbuffer[SETTINGS_RXBUFFER_SIZE];

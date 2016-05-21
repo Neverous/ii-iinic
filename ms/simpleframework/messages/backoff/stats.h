@@ -10,6 +10,6 @@ typedef struct BackoffStats
 
 extern BackoffStats backoff_stats;
 
-void show_backoff_stats(Time_cptr *time, BackoffStats *stats);
+void show_backoff_stats(Time_cptr time, BackoffStats *stats);
 
 #endif // __MESSAGES_BACKOFF_STATS_H__
