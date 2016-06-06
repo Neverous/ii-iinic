@@ -3,12 +3,18 @@
 
 #include <util/crc16.h>
 
-#include "common.h"
-#include "config.h"
 #include "iinic/iinic.h"
+
+#define __unused__ __attribute__((unused))
+#define must_read(x)    (*(const volatile typeof(x) *)&x)
+#define must_write(x)   (*(volatile typeof(x) *)&x)
 
 #define TIME_FMT            "%u:%lu"
 #define TIME_FMT_DATA(time) (time).high, (time).low
+
+#ifndef DEBUG_LEVEL
+#define DEBUG_LEVEL 4
+#endif
 
 #define DEBUG(...)      {if(DEBUG_LEVEL > 3) debug(__VA_ARGS__);}
 #define NOTICE(...)     {if(DEBUG_LEVEL > 2) debug(__VA_ARGS__);}
@@ -26,6 +32,7 @@ typedef union
     };
 } Time;
 
+typedef const uint8_t * const uint8_t_cptr;
 typedef const Time * const Time_cptr;
 typedef const iinic_timing * const iinic_timing_cptr;
 

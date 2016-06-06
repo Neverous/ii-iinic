@@ -19,7 +19,7 @@ PWD			:= $(shell pwd)
 CFLAGS		:= -DF_CPU=14745600 -DNDEBUG -g -Os -std=gnu11 -mmcu=$(MCU) \
 				-fpack-struct -fshort-enums -funsigned-char -funsigned-bitfields \
 				-ffunction-sections -ffast-math -fdata-sections -Wl,--gc-sections \
-				-ffreestanding -Wl,--relax -flto \
+				-ffreestanding -Wl,--relax \
 				-W -Wall -Wundef -Wshadow -Werror \
 				-I$(PWD)
 

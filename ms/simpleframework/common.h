@@ -5,8 +5,6 @@
 
 #include "config.h"
 
-#define __unused__ __attribute__((unused))
-
 
 enum EventTypes
 {

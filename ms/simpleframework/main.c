@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "iinic_wrapper.h"
+#include "usart_complex.h"
 #include "messages/handlers.h"
 #include "protocol/handlers.h"
 #include "protocol/initialization.h"
@@ -17,6 +18,14 @@ uint8_t sensor_id;
 
 uint16_t tdma_slot;
 
+struct USARTData usart;
+
+inline
+uint8_t usart_get_packet_size(const uint8_t kind)
+{
+    return usart_get_builtin_packet_size(kind);
+}
+
 
 void iinic_main(void)
 {
@@ -30,7 +39,7 @@ void iinic_main(void)
     iinic_set_bitrate(SETTINGS_RADIO_BITRATE);
 
     // SETUP USART
-    iinic_usart_is_debug();
+    iinic_usart_is_complex();
 
     // SETUP LEDS
     iinic_led_off(IINIC_LED_GREEN);
