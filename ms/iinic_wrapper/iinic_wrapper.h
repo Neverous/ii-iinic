@@ -13,13 +13,17 @@
 #define TIME_FMT_DATA(time) (time).high, (time).low
 
 #ifndef DEBUG_LEVEL
-#define DEBUG_LEVEL 4
+#define DEBUG_LEVEL 5
 #endif
 
-#define DEBUG(...)      {if(DEBUG_LEVEL > 3) debug(__VA_ARGS__);}
-#define NOTICE(...)     {if(DEBUG_LEVEL > 2) debug(__VA_ARGS__);}
+#define DEBUG(...)      {if(DEBUG_LEVEL > 4) debug(__VA_ARGS__);}
+#define NOTICE(...)     {if(DEBUG_LEVEL > 3) debug(__VA_ARGS__);}
+#define INFO(...)       {if(DEBUG_LEVEL > 2) debug(__VA_ARGS__);}
 #define WARNING(...)    {if(DEBUG_LEVEL > 1) debug(__VA_ARGS__);}
 #define ERROR(...)      {if(DEBUG_LEVEL > 0) debug(__VA_ARGS__);}
+
+#define max(a, b)   ((a) > (b) ? (a) : (b))
+#define min(a, b)   ((a) < (b) ? (a) : (b))
 
 
 typedef union

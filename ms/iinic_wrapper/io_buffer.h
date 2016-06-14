@@ -22,6 +22,7 @@ uint8_t io_buffer_push( IOBuffer * const buf,
                         const uint8_t *ptr, const uint8_t bytes);
 
 void io_buffer_commit(IOBuffer * const buf);
+uint16_t io_buffer_crc16(IOBuffer * const buf, uint8_t len);
 uint8_t io_buffer_pop_one(IOBuffer * const buf);
 uint8_t io_buffer_pop(  IOBuffer * const buf, const uint8_t bytes);
 
@@ -84,6 +85,19 @@ void io_buffer_commit(IOBuffer * const buf)
 }
 
 inline
+uint16_t io_buffer_crc16(IOBuffer * const buf, uint8_t len)
+{
+    uint16_t crc = 0xFFFF;
+    for(uint8_t p = buf->head; len && p != buf->cap; ++ p)
+    {
+        crc = _crc16_update(crc, buf->data[p]);
+        -- len;
+    }
+
+    return crc;
+}
+
+inline
 uint8_t io_buffer_pop_one(IOBuffer * const buf)
 {
     if(buf->head == buf->cap)
@@ -129,7 +143,7 @@ uint8_t io_buffer_peek_one( const IOBuffer * const buf,
                             const uint8_t **ptr)
 {
     *ptr = buf->data + buf->head;
-    return buf->cap - buf->head > 0;
+    return buf->cap != buf->head;
 }
 
 inline
@@ -137,7 +151,7 @@ uint8_t io_buffer_peek( const IOBuffer * const buf,
                         const uint8_t bytes, const uint8_t **ptr)
 {
     *ptr = buf->data + buf->head;
-    if(bytes < buf->cap - buf->head)
+    if(bytes < (uint8_t) buf->cap - buf->head)
         return bytes;
 
     return buf->cap - buf->head;
