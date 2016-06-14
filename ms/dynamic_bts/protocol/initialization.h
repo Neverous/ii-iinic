@@ -47,6 +47,8 @@ void initialization_loop(void)
                 handle_usart();
         }
 
+        validate_neighbourhood();
+        validate_pingpong();
         validate_synchronization();
     }
 }
@@ -68,6 +70,13 @@ void initialization_handle_messages(
             case KIND_SYNCHRONIZATION:
                 handle_synchronization(
                     time, (MessageSynchronization_cptr) msg, rssi);
+                ++ count;
+                break;
+
+            case KIND_NEIGHBOURHOOD:
+                handle_neighbourhood(
+                    time, (MessageNeighbourhood_cptr) msg, rssi);
+
                 ++ count;
                 break;
 

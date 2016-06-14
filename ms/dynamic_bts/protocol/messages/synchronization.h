@@ -27,7 +27,9 @@ typedef struct message_synchronization
     uint8_t unused  : 5;
 
     uint16_t    macaddr;
+#ifndef STATIC_ROOT
     uint16_t    root_macaddr;
+#endif
     uint8_t     seq_id;
     Time        global_time;
 } MessageSynchronization;
@@ -66,16 +68,19 @@ struct SynchronizationData
 
     struct
     {
+        bool    valid;
         bool    trigger;
         uint8_t counter;
     } timer;
 
+#ifndef STATIC_ROOT
     struct
     {
         uint16_t    macaddr;
         uint16_t    prev_macaddr;
         uint8_t     ttl;
     } root;
+#endif
 
     struct SynchronizationPoint sync_point[SETTINGS_SYNCHRONIZATION_POINTS];
 };
@@ -94,10 +99,14 @@ void time_get_global_now(Time *global_time);
 void time_local_to_global(Time *global_time, Time_cptr local_time);
 void time_global_to_local(Time *local_time, Time_cptr global_time);
 
-void update_synchronization_point(  const uint16_t root_macaddr,
-                                    const uint8_t seq_id,
-                                    Time_cptr local_time,
-                                    Time_cptr global_time);
+void update_synchronization_point(
+#ifndef STATIC_ROOT
+        const uint16_t root_macaddr,
+#endif
+        const uint8_t seq_id,
+        Time_cptr local_time,
+        Time_cptr global_time);
+
 void validate_synchronization(void);
 void recalculate_clock(Time_cptr time);
 
@@ -109,11 +118,21 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
                             const uint16_t rssi)
 {
     DEBUG(  TIME_FMT "|R|+SYNC(%u,0x%04x,0x%04x,%u," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->root_macaddr,
+            TIME_FMT_DATA(*time), rssi, msg->macaddr,
+#ifndef STATIC_ROOT
+            msg->root_macaddr,
+#else
+            STATIC_ROOT,
+#endif
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 
-    update_synchronization_point(   msg->root_macaddr, msg->seq_id, time,
-                                    &msg->global_time);
+    update_synchronization_point(
+#ifndef STATIC_ROOT
+            msg->root_macaddr,
+#endif
+            msg->seq_id,
+            time,
+            &msg->global_time);
 }
 
 inline
@@ -129,17 +148,28 @@ void put_synchronization_message(void)
 
     msg->kind           = KIND_SYNCHRONIZATION;
     msg->macaddr        = device_macaddr;
+#ifndef STATIC_ROOT
     msg->root_macaddr   = synchronization.root.macaddr;
+#endif
     msg->seq_id         = synchronization.clock.seq_id;
     Time local_time; time_get_now(&local_time);
     time_local_to_global(&msg->global_time, &local_time);
 
     txbuffer_commit(sizeof(MessageSynchronization));
+#ifndef STATIC_ROOT
     if(synchronization.root.macaddr == device_macaddr)
+#else
+    if(STATIC_ROOT == device_macaddr)
+#endif
         ++ synchronization.clock.seq_id;
 
     DEBUG(  TIME_FMT "|R|-SYNC(-1,0x%04x,0x%04x,%u," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(local_time), msg->macaddr, msg->root_macaddr,
+            TIME_FMT_DATA(local_time), msg->macaddr,
+#ifndef STATIC_ROOT
+            msg->root_macaddr,
+#else
+            STATIC_ROOT,
+#endif
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 }
 
@@ -191,11 +221,15 @@ void time_global_to_local(Time *local_time, Time_cptr global_time)
 }
 
 inline
-void update_synchronization_point(  const uint16_t root_macaddr,
-                                    const uint8_t seq_id,
-                                    Time_cptr local_time,
-                                    Time_cptr global_time)
+void update_synchronization_point(
+#ifndef STATIC_ROOT
+        const uint16_t root_macaddr,
+#endif
+        const uint8_t seq_id,
+        Time_cptr local_time,
+        Time_cptr global_time)
 {
+#ifndef STATIC_ROOT
     if(root_macaddr < synchronization.root.macaddr)
     {
         // Poprawka dla reelekcji
@@ -212,10 +246,17 @@ void update_synchronization_point(  const uint16_t root_macaddr,
     else if(    root_macaddr > synchronization.root.macaddr
             ||  (int8_t) (seq_id - synchronization.clock.seq_id) <= 0)
         return;
+#else
+    if((int8_t) (seq_id - synchronization.clock.seq_id) <= 0)
+        return;
+#endif
 
     synchronization.clock.seq_id = seq_id;
+
+#ifndef STATIC_ROOT
     if(synchronization.root.macaddr < device_macaddr)
         synchronization.root.ttl = SETTINGS_ROOT_TTL;
+#endif
 
     // Podmień najstarszy wpis
     struct SynchronizationPoint *sync_point = synchronization.sync_point;
@@ -242,6 +283,7 @@ void validate_synchronization(void)
         if(synchronization.sync_point[s].ttl)
             -- synchronization.sync_point[s].ttl;
 
+#ifndef STATIC_ROOT
     if(synchronization.root.ttl)
         -- synchronization.root.ttl;
 
@@ -254,6 +296,7 @@ void validate_synchronization(void)
         synchronization.root.macaddr        = device_macaddr;
         synchronization.timer.trigger       = true;
     }
+#endif
 
     ++ synchronization.timer.counter;
 }
@@ -339,6 +382,7 @@ void recalculate_clock(Time_cptr time)
         synchronization.clock.last_sync.low     = new_last_sync;
         synchronization.clock.last_sync.high    = new_last_sync >> 32;
         synchronization.timer.trigger           = true;
+        synchronization.timer.valid             = true;
 
         DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
                 TIME_FMT_DATA(*time), synchronization.clock.add,
@@ -450,6 +494,7 @@ void recalculate_clock(Time_cptr time)
     synchronization.clock.last_sync.low     = new_last_sync;
     synchronization.clock.last_sync.high    = new_last_sync >> 32;
     synchronization.timer.trigger           = true;
+    synchronization.timer.valid             = true;
 
     DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
             TIME_FMT_DATA(*time), synchronization.clock.add,

@@ -35,6 +35,7 @@ void bts_loop(void)
         data_step(&frame_deadline);
 
         validate_neighbourhood();
+        validate_pingpong();
         validate_synchronization();
     }
 }
@@ -135,8 +136,14 @@ void control_step(Time_cptr deadline)
 
     control_listen_until(&random_slot);
 
-    if(     synchronization.timer.trigger
-        ||  !(synchronization.timer.counter % SETTINGS_SYNCHRONIZATION_PERIOD))
+    if( (   synchronization.timer.valid ||
+#ifndef STATIC_ROOT
+            synchronization.root.macaddr == device_macaddr) &&
+#else
+            STATIC_ROOT == device_macaddr) &&
+#endif
+        (   synchronization.timer.trigger ||
+            !(synchronization.timer.counter % SETTINGS_SYNCHRONIZATION_PERIOD)))
     {
         put_synchronization_message();
     }

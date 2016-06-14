@@ -9,6 +9,7 @@
 
 #include "messages/debug.h"
 #include "messages/neighbourhood.h"
+#include "messages/pingpong.h"
 #include "messages/synchronization.h"
 
 #define KIND_EOF        0xE
@@ -37,6 +38,7 @@ uint8_t message_get_size(Message_cptr msg)
 
         CASE_KIND(DEBUG,            Debug,              debug);
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
+        CASE_KIND(PINGPONG,         PingPong,           pingpong);
         CASE_KIND(SYNCHRONIZATION,  Synchronization,    synchronization);
 
 #undef CASE_KIND

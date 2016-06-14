@@ -37,4 +37,6 @@ enum Settings
 
 #define DEBUG_LEVEL 5
 
+//#define STATIC_ROOT 0xFFFF
+
 #endif // __CONFIG_H__

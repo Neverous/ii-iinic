@@ -10,12 +10,15 @@ uint8_t usart_get_packet_size(uint8_t kind)
 }
 
 inline
-void handle_usart_message(  __unused__ Time_cptr time,
-                            __unused__ Message_cptr msg)
+void handle_usart_message(Time_cptr time, Message_cptr msg)
 {
-    // TODO
+    switch(msg->kind)
+    {
+        case KIND_PINGPONG:
+            handle_usart_pingpong(time, (MessagePingPong_cptr) msg);
+            break;
+    }
 }
-
 
 inline
 void handle_usart(void)

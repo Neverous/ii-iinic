@@ -11,7 +11,11 @@ void blink(Time_cptr time)
     uint8_t MAIN_LED    = IINIC_LED_GREEN;
     uint8_t SUPPORT_LED = IINIC_LED_RED;
 
+#ifndef STATIC_ROOT
     if(synchronization.root.macaddr == device_macaddr)
+#else
+    if(STATIC_ROOT == device_macaddr)
+#endif
     {
         MAIN_LED    = IINIC_LED_RED;
         SUPPORT_LED = IINIC_LED_GREEN;

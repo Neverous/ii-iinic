@@ -1,6 +1,7 @@
 #include "common.h"
 #include "protocol/bts.h"
 #include "protocol/initialization.h"
+#include "protocol/messages.h"
 
 uint16_t    device_macaddr;
 uint8_t     rxbuffer[SETTINGS_RXBUFFER_SIZE];
@@ -8,6 +9,7 @@ uint8_t     txbuffer[SETTINGS_TXBUFFER_SIZE];
 uint8_t     *txbuffer_ptr;
 
 struct NeighbourhoodData    neighbourhood;
+struct PingPongData         pingpong;
 struct SynchronizationData  synchronization;
 struct USARTData            usart;
 
@@ -19,9 +21,14 @@ void iinic_main(void)
 
     neighbourhood.ttl = 0;
 
+    pingpong.mode   = PP_MODE_HIDDEN;
+    pingpong.ttl    = 0;
+
     synchronization.clock.seq_id    = 0;
+#ifndef STATIC_ROOT
     synchronization.root.macaddr    = 0xFFFF;
     synchronization.root.ttl        = SETTINGS_INITIALIZATION_FRAMES;
+#endif
     synchronization.timer.counter   = random();
 
     // DEVICE SETUP
