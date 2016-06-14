@@ -36,7 +36,6 @@ typedef struct message_synchronization
 
 typedef const MessageSynchronization * const MessageSynchronization_cptr;
 
-inline
 uint8_t message_synchronization_get_size(
     __unused__ MessageSynchronization_cptr msg)
 {
@@ -91,7 +90,7 @@ extern struct SynchronizationData synchronization;
 ////////////////////////////////////////////////////////////////////////////////
 
 void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
-                            const uint16_t rssi);
+                            const uint8_t rssi);
 
 void put_synchronization_message(void);
 
@@ -113,9 +112,8 @@ void recalculate_clock(Time_cptr time);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline
 void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
-                            const uint16_t rssi)
+                            const uint8_t rssi)
 {
     DEBUG(  TIME_FMT "|R|+SYNC(%u,0x%04x,0x%04x,%u," TIME_FMT ")\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr,
@@ -135,7 +133,6 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
             &msg->global_time);
 }
 
-inline
 void put_synchronization_message(void)
 {
     MessageSynchronization *msg =
@@ -173,14 +170,12 @@ void put_synchronization_message(void)
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 }
 
-inline
 void time_get_global_now(Time *global_time)
 {
     Time local_time; time_get_now(&local_time);
     time_local_to_global(global_time, &local_time);
 }
 
-inline
 void time_local_to_global(Time *global_time, Time_cptr local_time)
 {
     if(!local_time)
@@ -200,7 +195,6 @@ void time_local_to_global(Time *global_time, Time_cptr local_time)
                     (synchronization.clock.skew * UINT_MAX) * skew_diff.high);
 }
 
-inline
 void time_global_to_local(Time *local_time, Time_cptr global_time)
 {
     if(!global_time)
@@ -220,7 +214,6 @@ void time_global_to_local(Time *local_time, Time_cptr global_time)
                     -(synchronization.clock.skew * UINT_MAX) * skew_diff.high);
 }
 
-inline
 void update_synchronization_point(
 #ifndef STATIC_ROOT
         const uint16_t root_macaddr,
@@ -276,7 +269,6 @@ void update_synchronization_point(
         }
 }
 
-inline
 void validate_synchronization(void)
 {
     for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
@@ -301,7 +293,6 @@ void validate_synchronization(void)
     ++ synchronization.timer.counter;
 }
 
-inline
 void recalculate_clock(Time_cptr time)
 {
     struct SynchronizationPoint *sync_point = synchronization.sync_point;

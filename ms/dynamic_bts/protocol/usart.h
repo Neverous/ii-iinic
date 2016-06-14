@@ -3,13 +3,11 @@
 
 #include "messages.h"
 
-inline
 uint8_t usart_get_packet_size(uint8_t kind)
 {
     return message_get_size((Message_cptr) &kind) + 2;
 }
 
-inline
 void handle_usart_message(Time_cptr time, Message_cptr msg)
 {
     switch(msg->kind)
@@ -20,7 +18,6 @@ void handle_usart_message(Time_cptr time, Message_cptr msg)
     }
 }
 
-inline
 void handle_usart(void)
 {
     Time time; time_get_now(&time);

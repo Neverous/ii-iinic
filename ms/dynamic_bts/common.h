@@ -15,7 +15,6 @@ extern uint8_t txbuffer[SETTINGS_TXBUFFER_SIZE];
 extern uint8_t *txbuffer_ptr;
 
 
-inline
 uint8_t *txbuffer_get(uint8_t bytes)
 {
     if(txbuffer_ptr + bytes + 2 > txbuffer + SETTINGS_TXBUFFER_SIZE)
@@ -24,7 +23,6 @@ uint8_t *txbuffer_get(uint8_t bytes)
     return txbuffer_ptr;
 }
 
-inline
 void txbuffer_commit(uint8_t bytes)
 {
     uint8_t *after = txbuffer_ptr + bytes;

@@ -26,7 +26,6 @@ typedef struct message_neighbourhood
 
 typedef const MessageNeighbourhood * const MessageNeighbourhood_cptr;
 
-inline
 uint8_t message_neighbourhood_get_size(__unused__ MessageNeighbourhood_cptr msg)
 {
     return sizeof(MessageNeighbourhood);
@@ -47,7 +46,7 @@ extern struct NeighbourhoodData neighbourhood;
 ////////////////////////////////////////////////////////////////////////////////
 
 void handle_neighbourhood(  Time_cptr time, MessageNeighbourhood_cptr msg,
-                            const uint16_t rssi);
+                            const uint8_t rssi);
 
 void put_neighbourhood_message(void);
 void validate_neighbourhood(void);
@@ -55,16 +54,14 @@ void validate_neighbourhood(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline
 void handle_neighbourhood(  Time_cptr time,
                             __unused__ MessageNeighbourhood_cptr msg,
-                            const uint16_t rssi)
+                            const uint8_t rssi)
 {
     DEBUG(TIME_FMT "|R|+NHOOD(%u)\r\n", TIME_FMT_DATA(*time), rssi);
     neighbourhood.ttl = SETTINGS_NEIGHBOURHOOD_TTL;
 }
 
-inline
 void put_neighbourhood_message(void)
 {
     MessageNeighbourhood *msg =
@@ -83,7 +80,6 @@ void put_neighbourhood_message(void)
     DEBUG(TIME_FMT "|R|-NHOOD\r\n", TIME_FMT_DATA(local_time));
 }
 
-inline
 void validate_neighbourhood(void)
 {
     if(neighbourhood.ttl)

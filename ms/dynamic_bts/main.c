@@ -9,6 +9,7 @@ uint8_t     txbuffer[SETTINGS_TXBUFFER_SIZE];
 uint8_t     *txbuffer_ptr;
 
 struct NeighbourhoodData    neighbourhood;
+struct NeighboursData       neighbours;
 struct PingPongData         pingpong;
 struct SynchronizationData  synchronization;
 struct USARTData            usart;
@@ -20,6 +21,8 @@ void iinic_main(void)
 
 
     neighbourhood.ttl = 0;
+
+    neighbours.timer = random();
 
     pingpong.mode   = PP_MODE_HIDDEN;
     pingpong.ttl    = 0;

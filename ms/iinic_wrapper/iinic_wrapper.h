@@ -52,6 +52,8 @@ void time_sub(Time *a, Time_cptr b);
 
 uint16_t crc16(uint8_t_cptr buf, uint16_t len);
 
+uint8_t _scale_rssi(uint16_t rssi);
+
 
 void time_align(Time *current, int32_t alignment)
 {
@@ -113,6 +115,18 @@ uint16_t crc16(const uint8_t *buf, uint16_t len)
     }
 
     return crc;
+}
+
+uint8_t _scale_rssi(uint16_t rssi)
+{
+    if(rssi < 180)
+        return 0;
+
+    rssi -= 180;
+    if(rssi > 255)
+        return 255;
+
+    return rssi;
 }
 
 #endif // __IINIC_WRAPPER_H__

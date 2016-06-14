@@ -48,7 +48,6 @@ typedef struct message_pingpong
 
 typedef const MessagePingPong * const MessagePingPong_cptr;
 
-inline
 uint8_t message_pingpong_get_size(__unused__ MessagePingPong_cptr msg)
 {
     return sizeof(MessagePingPong);
@@ -75,7 +74,6 @@ void validate_pingpong(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline
 void handle_usart_pingpong(Time_cptr time, MessagePingPong_cptr msg)
 {
     DEBUG(  TIME_FMT "|U|+PINGPONG(0x%02x)\r\n",
@@ -88,7 +86,6 @@ void handle_usart_pingpong(Time_cptr time, MessagePingPong_cptr msg)
     pingpong.ttl = UINT8_MAX;
 }
 
-inline
 void validate_pingpong(void)
 {
     if(!pingpong.ttl)

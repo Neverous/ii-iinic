@@ -28,7 +28,6 @@ typedef struct message_debug
 
 typedef const MessageDebug * const MessageDebug_cptr;
 
-inline
 uint8_t message_debug_get_size(__unused__ MessageDebug_cptr msg)
 {
     return sizeof(MessageDebug);

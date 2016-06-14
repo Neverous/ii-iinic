@@ -9,6 +9,7 @@
 
 #include "messages/debug.h"
 #include "messages/neighbourhood.h"
+#include "messages/neighbours.h"
 #include "messages/pingpong.h"
 #include "messages/synchronization.h"
 
@@ -27,7 +28,6 @@ typedef struct Message
 
 typedef const Message * const Message_cptr;
 
-inline
 uint8_t message_get_size(Message_cptr msg)
 {
     switch(msg->kind)
@@ -38,6 +38,7 @@ uint8_t message_get_size(Message_cptr msg)
 
         CASE_KIND(DEBUG,            Debug,              debug);
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
+        CASE_KIND(NEIGHBOURS,       Neighbours,         neighbours);
         CASE_KIND(PINGPONG,         PingPong,           pingpong);
         CASE_KIND(SYNCHRONIZATION,  Synchronization,    synchronization);
 
@@ -47,7 +48,6 @@ uint8_t message_get_size(Message_cptr msg)
     return 1;
 }
 
-inline
 uint8_t validate_message(   Message_cptr msg, uint8_t **buffer_ptr,
                             uint8_t_cptr buffer_end)
 {

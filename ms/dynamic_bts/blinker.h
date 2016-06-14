@@ -4,7 +4,6 @@
 #include "common.h"
 #include "protocol/messages.h"
 
-inline
 static
 void blink(Time_cptr time)
 {

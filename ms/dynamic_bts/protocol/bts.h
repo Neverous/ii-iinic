@@ -8,7 +8,6 @@
 void control_step(Time_cptr deadline);
 void data_step(Time_cptr deadline);
 
-inline
 static
 void bts_loop(void)
 {
@@ -35,14 +34,14 @@ void bts_loop(void)
         data_step(&frame_deadline);
 
         validate_neighbourhood();
+        validate_neighbours();
         validate_pingpong();
         validate_synchronization();
     }
 }
 
-inline
 void control_handle_messages(
-    Time_cptr time, const uint16_t rssi,
+    Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end)
 {
     DEBUG(  TIME_FMT "|R|+%ub\r\n",
@@ -68,6 +67,11 @@ void control_handle_messages(
                 ++ count;
                 break;
 
+            case KIND_NEIGHBOURS:
+                handle_neighbours(time, (MessageNeighbours_cptr) msg, rssi);
+                ++ count;
+                break;
+
             case KIND_EOF:
                 ++ buffer_ptr;
                 break;
@@ -77,7 +81,6 @@ void control_handle_messages(
     DEBUG(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
 }
 
-inline
 void control_listen_until(Time_cptr deadline)
 {
     uint8_t signal;
@@ -88,7 +91,7 @@ void control_listen_until(Time_cptr deadline)
         {
             control_handle_messages(
                 (Time_cptr) &iinic_rx_timing,
-                iinic_rx_rssi,
+                _scale_rssi(iinic_rx_rssi),
                 rxbuffer, iinic_buffer_ptr);
 
             iinic_rx();
@@ -99,7 +102,6 @@ void control_listen_until(Time_cptr deadline)
     }
 }
 
-inline
 bool speak_until(Time_cptr deadline)
 {
     if(txbuffer_ptr == txbuffer)
@@ -132,6 +134,11 @@ void control_step(Time_cptr deadline)
     {
         neighbourhood.ttl = SETTINGS_NEIGHBOURHOOD_TTL;
         put_neighbourhood_message();
+    }
+
+    if(!(neighbours.timer % SETTINGS_NEIGHBOURS_PERIOD))
+    {
+        put_neighbours_message();
     }
 
     control_listen_until(&random_slot);

@@ -39,25 +39,21 @@ uint8_t io_buffer_exchange( IOBuffer *output, IOBuffer * const input,
                             const uint8_t bytes);
 
 
-inline
 uint8_t io_buffer_full(const IOBuffer * const buf)
 {
     return buf->head == (uint8_t) (buf->tail + 1);
 }
 
-inline
 uint8_t io_buffer_free_size(const IOBuffer * const buf)
 {
     return 255 - io_buffer_used_size(buf);
 }
 
-inline
 uint8_t io_buffer_used_size(const IOBuffer * const buf)
 {
     return buf->tail - buf->head;
 }
 
-inline
 uint8_t io_buffer_push_one(IOBuffer * const buf, const uint8_t byte)
 {
     if(io_buffer_full(buf))
@@ -67,7 +63,6 @@ uint8_t io_buffer_push_one(IOBuffer * const buf, const uint8_t byte)
     return 1;
 }
 
-inline
 uint8_t io_buffer_push( IOBuffer * const buf,
                         const uint8_t *ptr, const uint8_t bytes)
 {
@@ -78,13 +73,11 @@ uint8_t io_buffer_push( IOBuffer * const buf,
     return put;
 }
 
-inline
 void io_buffer_commit(IOBuffer * const buf)
 {
     buf->cap = buf->tail;
 }
 
-inline
 uint16_t io_buffer_crc16(IOBuffer * const buf, uint8_t len)
 {
     uint16_t crc = 0xFFFF;
@@ -97,7 +90,6 @@ uint16_t io_buffer_crc16(IOBuffer * const buf, uint8_t len)
     return crc;
 }
 
-inline
 uint8_t io_buffer_pop_one(IOBuffer * const buf)
 {
     if(buf->head == buf->cap)
@@ -107,7 +99,6 @@ uint8_t io_buffer_pop_one(IOBuffer * const buf)
     return 1;
 }
 
-inline
 uint8_t io_buffer_pop(IOBuffer * const buf, const uint8_t bytes)
 {
     uint8_t pop = 0;
@@ -117,7 +108,6 @@ uint8_t io_buffer_pop(IOBuffer * const buf, const uint8_t bytes)
     return pop;
 }
 
-inline
 uint8_t io_buffer_get_one(IOBuffer * const buf, uint8_t * const byte)
 {
     if(buf->head == buf->cap)
@@ -127,7 +117,6 @@ uint8_t io_buffer_get_one(IOBuffer * const buf, uint8_t * const byte)
     return 1;
 }
 
-inline
 uint8_t io_buffer_get(  IOBuffer * const buf,
                         uint8_t *ptr, const uint8_t bytes)
 {
@@ -138,7 +127,6 @@ uint8_t io_buffer_get(  IOBuffer * const buf,
     return got;
 }
 
-inline
 uint8_t io_buffer_peek_one( const IOBuffer * const buf,
                             const uint8_t **ptr)
 {
@@ -146,7 +134,6 @@ uint8_t io_buffer_peek_one( const IOBuffer * const buf,
     return buf->cap != buf->head;
 }
 
-inline
 uint8_t io_buffer_peek( const IOBuffer * const buf,
                         const uint8_t bytes, const uint8_t **ptr)
 {
@@ -157,7 +144,6 @@ uint8_t io_buffer_peek( const IOBuffer * const buf,
     return buf->cap - buf->head;
 }
 
-inline
 uint8_t io_buffer_exchange( IOBuffer *output, IOBuffer * const input,
                             const uint8_t bytes)
 {

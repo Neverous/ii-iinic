@@ -6,10 +6,9 @@
 #include "usart.h"
 
 void initialization_handle_messages(
-    Time_cptr time, const uint16_t rssi,
+    Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end);
 
-inline
 static
 void initialization_loop(void)
 {
@@ -37,7 +36,7 @@ void initialization_loop(void)
             {
                 initialization_handle_messages(
                     (Time_cptr) &iinic_rx_timing,
-                    iinic_rx_rssi,
+                    _scale_rssi(iinic_rx_rssi),
                     rxbuffer, iinic_buffer_ptr);
 
                 iinic_rx();
@@ -47,15 +46,15 @@ void initialization_loop(void)
                 handle_usart();
         }
 
+        validate_neighbours();
         validate_neighbourhood();
         validate_pingpong();
         validate_synchronization();
     }
 }
 
-inline
 void initialization_handle_messages(
-    Time_cptr time, const uint16_t rssi,
+    Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end)
 {
     DEBUG(  TIME_FMT "|R|+%ub\r\n",
