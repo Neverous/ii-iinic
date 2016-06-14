@@ -7,10 +7,13 @@
 #pragma pack(push, 1)
 #endif
 
+#include "messages/data.h"
 #include "messages/debug.h"
 #include "messages/neighbourhood.h"
 #include "messages/neighbours.h"
 #include "messages/pingpong.h"
+#include "messages/request.h"
+#include "messages/response.h"
 #include "messages/synchronization.h"
 
 #define KIND_EOF        0xE
@@ -36,10 +39,13 @@ uint8_t message_get_size(Message_cptr msg)
     case KIND_ ## NAME:             \
         return message_## name ## _get_size((Message ## Name ## _cptr) msg)
 
+        CASE_KIND(DATA,             Data,               data);
         CASE_KIND(DEBUG,            Debug,              debug);
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
         CASE_KIND(NEIGHBOURS,       Neighbours,         neighbours);
         CASE_KIND(PINGPONG,         PingPong,           pingpong);
+        CASE_KIND(REQUEST,          Request,            request);
+        CASE_KIND(RESPONSE,         Response,           response);
         CASE_KIND(SYNCHRONIZATION,  Synchronization,    synchronization);
 
 #undef CASE_KIND

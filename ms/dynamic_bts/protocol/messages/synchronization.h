@@ -89,6 +89,10 @@ extern struct SynchronizationData synchronization;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+extern void update_neighbour(   Time_cptr time,
+                                const uint16_t macaddr,
+                                const uint8_t rssi);
+
 void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
                             const uint8_t rssi);
 
@@ -124,6 +128,7 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
 #endif
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 
+    update_neighbour(time, msg->macaddr, rssi);
     update_synchronization_point(
 #ifndef STATIC_ROOT
             msg->root_macaddr,
