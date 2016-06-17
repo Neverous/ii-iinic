@@ -1085,7 +1085,7 @@
            </font>
           </property>
           <property name="toolTip">
-           <string>Debug window</string>
+           <string/>
           </property>
           <property name="styleSheet">
            <string notr="true">color: rgb(186, 189, 182);</string>

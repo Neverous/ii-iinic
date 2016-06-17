@@ -62,6 +62,6 @@ QRectF NetworkEdge::boundingRect() const
 void NetworkEdge::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
 	QGraphicsLineItem::paint(painter, option, widget);
-    painter->drawText(QGraphicsLineItem::boundingRect().adjusted(-NetworkVisualization::NODE_SIZE / 2, -NetworkVisualization::NODE_SIZE / 2, NetworkVisualization::NODE_SIZE / 2, 0), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(rssi));
+    painter->drawText(QGraphicsLineItem::boundingRect().adjusted(-NetworkVisualization::NODE_SIZE / 2, -NetworkVisualization::NODE_SIZE / 2, NetworkVisualization::NODE_SIZE / 2, 0), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(rssi + 180));
     painter->drawText(QGraphicsLineItem::boundingRect().adjusted(-NetworkVisualization::NODE_SIZE / 2, 0, NetworkVisualization::NODE_SIZE / 2, NetworkVisualization::NODE_SIZE / 2), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(ttl));
 }

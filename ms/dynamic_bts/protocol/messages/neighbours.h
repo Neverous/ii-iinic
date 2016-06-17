@@ -24,38 +24,53 @@
 
 struct neighbour;
 
-typedef struct neighbour
+typedef struct neighbour_info
 {
     uint16_t    macaddr;
     uint8_t     rssi;
     uint8_t     ttl;
-} Neighbour;
+} NeighbourInfo;
 
 typedef struct message_neighbours
 {
     uint8_t kind    : 3;
     uint8_t count   : 5;
 
-    uint16_t    macaddr;
-    uint8_t     ttl;
-    Neighbour   neighbour[];
+    uint16_t        macaddr;
+    uint8_t         ttl;
+    NeighbourInfo   neighbour[];
 } MessageNeighbours;
 
 typedef const MessageNeighbours * const MessageNeighbours_cptr;
 
 uint8_t message_neighbours_get_size(MessageNeighbours_cptr msg)
 {
-    return sizeof(MessageNeighbours) + msg->count * sizeof(Neighbour);
+    return sizeof(MessageNeighbours) + msg->count * sizeof(NeighbourInfo);
 }
 
 
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
 
+typedef struct node
+{
+    uint16_t macaddr;
+} Node;
+
+typedef struct edge
+{
+    uint8_t rssi;
+    uint8_t ttl;
+    uint8_t source      : 4;
+    uint8_t destination : 4;
+} Edge;
+
 struct NeighboursData
 {
     uint8_t     timer;
-    Neighbour   neighbour[SETTINGS_MAX_NEIGHBOURS];
+    uint16_t    is_neighbour;
+    Node        node[SETTINGS_MAX_NODES];
+    Edge        edge[SETTINGS_MAX_EDGES];
 };
 
 extern struct NeighboursData neighbours;
@@ -69,6 +84,9 @@ void put_neighbours_message(void);
 void update_neighbour(  Time_cptr time,
                         const uint16_t macaddr,
                         const uint8_t rssi);
+uint8_t update_node(const uint16_t macaddr);
+uint8_t update_edge(const uint8_t source, const uint8_t destination,
+                    const uint8_t rssi, const uint8_t ttl);
 
 void validate_neighbours(void);
 uint8_t neighbours_count(void);
@@ -85,6 +103,7 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
     if(msg->macaddr == device_macaddr)
         return;
 
+    update_neighbour(time, msg->macaddr, rssi);
     uint8_t size = message_neighbours_get_size(msg);
     if(pingpong.mode)
     {
@@ -93,6 +112,17 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
                 TIME_FMT_DATA(*time), msg->macaddr, msg->ttl,
                 msg->count);
     }
+
+    uint8_t src = update_node(msg->macaddr);
+    if(src != SETTINGS_MAX_NODES)
+        for(uint8_t n = 0; n < msg->count; ++ n)
+        {
+            uint8_t dst = update_node(msg->neighbour[n].macaddr);
+            if(dst != SETTINGS_MAX_NODES)
+                update_edge(src, dst,
+                            msg->neighbour[n].rssi, msg->neighbour[n].ttl);
+        }
+
 
 #ifndef STATIC_ROOT
     if(synchronization.root.macaddr != device_macaddr)
@@ -116,16 +146,13 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
         txbuffer_commit(size);
         return;
     }
-
-    // TODO
 }
 
 void put_neighbours_message(void)
 {
-    Neighbour *neighbour = neighbours.neighbour;
     uint8_t valid_neighbours = neighbours_count();
     uint8_t size =  sizeof(MessageNeighbours) +
-                    valid_neighbours * sizeof(Neighbour);
+                    valid_neighbours * sizeof(NeighbourInfo);
 
     MessageNeighbours *msg =
         (MessageNeighbours *) txbuffer_get(size);
@@ -138,15 +165,22 @@ void put_neighbours_message(void)
     msg->macaddr    = device_macaddr;
     msg->ttl        = SETTINGS_MAX_HOP;
 
-    for(uint8_t n = 0, m = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
+    Node *node = neighbours.node;
+    Edge *edge = neighbours.edge;
+    for(uint8_t e = 0, m = 0; e < SETTINGS_MAX_EDGES; ++ e)
     {
-        if(neighbour[n].ttl)
-        {
-            msg->neighbour[m].macaddr   = neighbour[n].macaddr;
-            msg->neighbour[m].rssi      = neighbour[n].rssi;
-            msg->neighbour[m].ttl       = neighbour[n].ttl;
-            ++ m;
-        }
+        if(!edge[e].ttl)
+            continue;
+
+        if(edge[e].source && edge[e].destination)
+            continue;
+
+        msg->neighbour[m].macaddr   =
+            node[edge[e].source | edge[e].destination].macaddr;
+
+        msg->neighbour[m].rssi      = edge[e].rssi;
+        msg->neighbour[m].ttl       = edge[e].ttl;
+        ++ m;
     }
 
     txbuffer_commit(size);
@@ -167,51 +201,107 @@ void update_neighbour(  Time_cptr time,
                         const uint16_t macaddr,
                         const uint8_t rssi)
 {
-    Neighbour *neighbour = neighbours.neighbour;
-    uint8_t n;
+    uint8_t n = update_node(macaddr);
+    if(n == SETTINGS_MAX_NODES)
+    {
+        WARNING(    TIME_FMT "| |Nodes limit reached!",
+                    TIME_FMT_DATA(*time));
+        return;
+    }
 
-    // Zaktualizuj istniejący wpis
-    for(n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-        if(neighbour[n].macaddr == macaddr)
-        {
-            neighbour[n].rssi   += rssi;
-            neighbour[n].rssi   /= 2;
-            neighbour[n].ttl    = SETTINGS_NEIGHBOUR_TTL;
-            return;
-        }
-
-    // Dodaj nowy wpis
-    for(n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-        if(!neighbour[n].ttl)
-        {
-            neighbour[n].macaddr    = macaddr;
-            neighbour[n].rssi       = rssi;
-            neighbour[n].ttl        = SETTINGS_NEIGHBOUR_TTL;
-            return;
-        }
-
-    // Brak miejsca na nowy wpis
-    WARNING(TIME_FMT "| |Neighbours limit reached!", TIME_FMT_DATA(*time));
+    uint8_t e = update_edge(0, n, rssi, SETTINGS_NEIGHBOUR_TTL);
+    if(e == SETTINGS_MAX_EDGES)
+    {
+        WARNING(    TIME_FMT "| |Edges limit reached!",
+                    TIME_FMT_DATA(*time));
+        return;
+    }
 }
 
 void validate_neighbours(void)
 {
     ++ neighbours.timer;
-    Neighbour *neighbour = neighbours.neighbour;
-    for(uint8_t n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-        if(neighbour[n].ttl)
-            -- neighbour[n].ttl;
+    Edge *edge = neighbours.edge;
+    neighbours.is_neighbour = 0;
+    for(uint8_t e = 0; e < SETTINGS_MAX_EDGES; ++ e)
+    {
+        if(edge[e].ttl)
+            -- edge[e].ttl;
+
+        if(!edge[e].ttl)
+            continue;
+
+        if(!edge[e].source)
+            neighbours.is_neighbour |= _BV(edge[e].destination);
+
+        if(!edge[e].destination)
+            neighbours.is_neighbour |= _BV(edge[e].source);
+    }
+}
+
+uint8_t update_node(const uint16_t macaddr)
+{
+    Node *node = neighbours.node;
+    uint8_t n = 0;
+
+    while(n < SETTINGS_MAX_NODES && node[n].macaddr != macaddr)
+        ++ n;
+
+    if(n == SETTINGS_MAX_NODES)
+    {
+        n = 0;
+        while(n < SETTINGS_MAX_NODES && node[n].macaddr)
+            ++ n;
+
+        if(n != SETTINGS_MAX_NODES)
+            node[n].macaddr = macaddr;
+    }
+
+    return n;
+}
+
+uint8_t update_edge(const uint8_t source, const uint8_t destination,
+                    const uint8_t rssi, const uint8_t ttl)
+{
+    Edge *edge = neighbours.edge;
+    uint8_t e;
+    for(e = 0; e < SETTINGS_MAX_EDGES; ++ e)
+    {
+        if(!edge[e].ttl)
+            continue;
+
+        if(edge[e].source == source && edge[e].destination == destination)
+            break;
+
+        if(edge[e].source == destination && edge[e].destination == source)
+            break;
+    }
+
+    if(e == SETTINGS_MAX_EDGES)
+    {
+        e = 0;
+        while(e < SETTINGS_MAX_EDGES && edge[e].ttl)
+            ++ e;
+
+        if(e != SETTINGS_MAX_EDGES)
+        {
+            edge[e].source = source;
+            edge[e].destination = destination;
+        }
+    }
+
+    if(e != SETTINGS_MAX_EDGES)
+    {
+        edge[e].rssi = ((uint16_t) edge[e].rssi + rssi) / 2;
+        edge[e].ttl = max(edge[e].ttl, ttl);
+    }
+
+    return e;
 }
 
 uint8_t neighbours_count(void)
 {
-    Neighbour *neighbour = neighbours.neighbour;
-    uint8_t count = 0;
-    for(uint8_t n = 0; n < SETTINGS_MAX_NEIGHBOURS; ++ n)
-        if(neighbour[n].ttl)
-            ++ count;
-
-    return count;
+    return __builtin_popcount(neighbours.is_neighbour);
 }
 
 #endif // __AVR__

@@ -6,7 +6,8 @@
 enum Settings
 {
     // GLOBAL
-    SETTINGS_MAX_NEIGHBOURS             = 16,
+    SETTINGS_MAX_NODES                  = 16,
+    SETTINGS_MAX_EDGES                  = 128,
     SETTINGS_MAX_HOP                    = 1,
 
     // RADIO

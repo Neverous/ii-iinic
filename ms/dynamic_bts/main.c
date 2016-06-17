@@ -22,7 +22,9 @@ void iinic_main(void)
 
     neighbourhood.ttl = 0;
 
-    neighbours.timer = random();
+    neighbours.is_neighbour     = 0;
+    neighbours.node[0].macaddr  = device_macaddr;
+    neighbours.timer            = random();
 
     pingpong.mode   = PP_MODE_HIDDEN;
     pingpong.ttl    = 0;

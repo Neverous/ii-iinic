@@ -13,7 +13,7 @@ class NetworkVisualization: public QGraphicsScene
 
 public:
     static constexpr int    FPS        = 30;
-    static constexpr int    MAX_RSSI   = 500;
+    static constexpr int    MAX_RSSI   = 255;
     static constexpr int    NODE_SIZE  = 50;
     static constexpr int    SPEED      = 1;
     static constexpr qreal  PULL_CONSTANT = 0.01;
