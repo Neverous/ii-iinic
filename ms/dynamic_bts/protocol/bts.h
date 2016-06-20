@@ -73,6 +73,16 @@ void control_handle_messages(
                 ++ count;
                 break;
 
+            case KIND_REQUEST:
+                handle_request(time, (MessageRequest_cptr) msg, rssi);
+                ++ count;
+                break;
+
+            case KIND_RESPONSE:
+                handle_response(time, (MessageResponse_cptr) msg, rssi);
+                ++ count;
+                break;
+
             case KIND_EOF:
                 ++ buffer_ptr;
                 break;
@@ -174,6 +184,10 @@ void data_handle_messages(
         Message_cptr msg = (Message_cptr) buffer_ptr;
         switch(validate_message(msg, &buffer_ptr, buffer_end))
         {
+            case KIND_DATA:
+                ++ count;
+                break;
+
             case KIND_EOF:
                 ++ buffer_ptr;
                 break;

@@ -33,6 +33,9 @@ void iinic_main(void)
     pingpong.mode   = PP_MODE_HIDDEN;
     pingpong.ttl    = 0;
 
+    for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
+        request.assignment[n].ttl = 0;
+
     synchronization.clock.seq_id    = 0;
 #ifndef STATIC_ROOT
     synchronization.root.macaddr    = 0xFFFF;

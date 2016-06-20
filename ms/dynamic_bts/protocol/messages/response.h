@@ -49,6 +49,8 @@ extern uint8_t update_node(const uint16_t macaddr);
 void handle_response(   Time_cptr time, MessageResponse_cptr msg,
                         const uint8_t rssi);
 
+void put_response_message(uint8_t n);
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -97,8 +99,38 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
         control_txbuffer_commit(size);
         return;
     }
+}
 
-    request.valid = true;
+inline
+void put_response_message(uint8_t n)
+{
+    if(request.assignment[n].ttl > SETTINGS_MAX_HOP)
+        return;
+
+    uint8_t size = sizeof(MessageResponse) + request.assignment[n].size;
+
+    MessageResponse *msg = (MessageResponse *) control_txbuffer_get(size);
+
+    if(!msg)
+        return;
+
+    msg->kind           = KIND_RESPONSE;
+    msg->size           = request.assignment[n].size;
+    msg->macaddr        = neighbours.node[n].macaddr;
+    msg->ttl            = SETTINGS_MAX_HOP;
+    msg->assignment_ttl = request.assignment[n].ttl - SETTINGS_MAX_HOP;
+    for(uint8_t s = 0; s < request.assignment[n].size; ++ s)
+        msg->slotmask[s] = request.assignment[n].slotmask[s];
+
+    control_txbuffer_commit(size);
+    DEBUG(  TIME_FMT "|R|-RESP(-1,0x%04x,%u,%u,%u,0x",
+            (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->ttl,
+            msg->assignment_ttl, msg->size);
+
+    for(uint8_t s = 0; s < msg->size; ++ s)
+        DEBUG("%02x", msg->slotmask[s]);
+
+    DEBUG(")\r\n");
 }
 
 #endif // __AVR__
