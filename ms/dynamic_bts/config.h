@@ -18,13 +18,16 @@ enum Settings
     SETTINGS_RXBUFFER_SIZE              = 256,
     SETTINGS_RADIO_TX                   = IINIC_DEVIATION_120
                                         | IINIC_POWER_175,
-    SETTINGS_TXBUFFER_SIZE              = 256,
+    SETTINGS_CONTROL_TXBUFFER_SIZE      = 256,
+    SETTINGS_DATA_TXBUFFER_SIZE         = SETTINGS_RXBUFFER_SIZE, // Hoax
 
     // BTS
     SETTINGS_INITIALIZATION_FRAMES      = 64,
     SETTINGS_CONTROL_FRAME_TIME         = 131072LU,
     SETTINGS_DATA_FRAME_TIME            = 393216LU,
-    SETTINGS_DATA_SLOT_MARGIN           = 5,    // time margin in %
+    SETTINGS_DATA_SLOTS                 = 64,
+    SETTINGS_DATA_SLOT_TIME             = SETTINGS_DATA_FRAME_TIME
+                                        / SETTINGS_DATA_SLOTS,
 
     // SYNCHRONIZATION
     SETTINGS_ROOT_TTL                   = 96,
@@ -37,7 +40,7 @@ enum Settings
     SETTINGS_NEIGHBOURHOOD_TTL          = 16,
 
     // NEIGHBOURS
-    SETTINGS_NEIGHBOUR_TTL              = 64,
+    SETTINGS_NEIGHBOUR_TTL              = 96,
     SETTINGS_NEIGHBOURS_PERIOD          = 64,
 };
 

@@ -51,13 +51,21 @@ uint16_t message_request_get_count(MessageRequest_cptr msg)
 
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
+//
+typedef struct assignment
+{
+    uint8_t ttl;
+    uint8_t size;
+    uint8_t slotmask[8];
+} Assignment;
 
 struct RequestData
 {
-    uint8_t     assignment_ttl[64];
-    uint8_t     blocks_left;
+    bool        valid;
+    uint16_t    blocks_left;
     uint16_t    dst_macaddr;
     uint8_t     seq_id;
+    Assignment  assignment[SETTINGS_MAX_NODES];
 };
 
 extern struct RequestData request;
@@ -67,6 +75,8 @@ extern struct RequestData request;
 
 void handle_request(Time_cptr time, MessageRequest_cptr msg,
                     const uint8_t rssi);
+
+void validate_request(void);
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -92,7 +102,7 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
             return;
 
         uint8_t size = message_request_get_size(msg);
-        MessageRequest *forward = (MessageRequest *) txbuffer_get(size);
+        MessageRequest *forward = (MessageRequest *) control_txbuffer_get(size);
 
         if(!forward)
         {
@@ -102,11 +112,23 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
 
         memcpy(forward, msg, size);
         -- forward->ttl;
-        txbuffer_commit(size);
+        control_txbuffer_commit(size);
         return;
     }
 
     // TODO
+}
+
+inline
+void validate_request(void)
+{
+    request.valid = false;
+    for(uint8_t s = 0; s < SETTINGS_MAX_NODES; ++ s)
+        if(request.assignment[s].ttl)
+            -- request.assignment[s].ttl;
+
+    if(request.assignment[0].ttl)
+        request.valid = true;
 }
 
 #endif // __AVR__

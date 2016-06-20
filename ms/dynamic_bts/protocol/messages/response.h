@@ -45,6 +45,7 @@ uint8_t message_response_get_size(MessageResponse_cptr msg)
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
 
+extern uint8_t update_node(const uint16_t macaddr);
 void handle_response(   Time_cptr time, MessageResponse_cptr msg,
                         const uint8_t rssi);
 
@@ -64,13 +65,26 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
 
     DEBUG(")\r\n");
 
+    uint8_t n = update_node(msg->macaddr);
+    if(n == SETTINGS_MAX_NODES)
+    {
+        WARNING(TIME_FMT "|R|DROP RESP\r\n", TIME_FMT_DATA(*time));
+        return;
+    }
+
+    request.assignment[n].ttl   = msg->assignment_ttl;
+    request.assignment[n].size  = msg->size;
+    for(uint8_t s = 0; s < msg->size; ++ s)
+        request.assignment[n].slotmask[s] = msg->slotmask[s];
+
     if(msg->macaddr != device_macaddr)
     {
         if(!msg->ttl)
             return;
 
         uint8_t size = message_response_get_size(msg);
-        MessageResponse *forward = (MessageResponse *) txbuffer_get(size);
+        MessageResponse *forward = (MessageResponse *) control_txbuffer_get(
+                size);
 
         if(!forward)
         {
@@ -80,20 +94,11 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
 
         memcpy(forward, msg, size);
         -- forward->ttl;
-        txbuffer_commit(size);
+        control_txbuffer_commit(size);
         return;
     }
 
-    // TODO: check if not already got response
-    uint8_t step = 8 / msg->size;
-    for(uint8_t m = 0; m < msg->size; ++ m)
-    {
-        uint8_t start = m * 8 * step;
-        for(uint8_t b = 0; b < 8; ++ b) if(msg->slotmask[m] & (1 << b))
-            for(uint8_t s = start + b * step; s < start + (b + 1) * step; ++ s)
-                request.assignment_ttl[s] = max(
-                    request.assignment_ttl[s], msg->assignment_ttl);
-    }
+    request.valid = true;
 }
 
 #endif // __AVR__

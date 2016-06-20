@@ -141,7 +141,8 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
 void put_synchronization_message(void)
 {
     MessageSynchronization *msg =
-        (MessageSynchronization *) txbuffer_get(sizeof(MessageSynchronization));
+        (MessageSynchronization *) control_txbuffer_get(
+                                            sizeof(MessageSynchronization));
 
     if(!msg)
         return;
@@ -157,7 +158,7 @@ void put_synchronization_message(void)
     Time local_time; time_get_now(&local_time);
     time_local_to_global(&msg->global_time, &local_time);
 
-    txbuffer_commit(sizeof(MessageSynchronization));
+    control_txbuffer_commit(sizeof(MessageSynchronization));
 #ifndef STATIC_ROOT
     if(synchronization.root.macaddr == device_macaddr)
 #else

@@ -11,7 +11,7 @@
 // MessageNeighbours
 //  Aktualni sąsiedzi urządzenia, informacja dla korzenia (BTS) pozwalająca mu
 //  poznać strukturę sieci dla lepszego przydziału slotów
-//  rozmiar: 1-161 bajtów
+//  rozmiar: 4-132 bajtów
 //
 //  [3]     kind        - typ wiadomości = 0x6
 //  [5]     count       - aktualna liczba sąsiadów
@@ -107,7 +107,7 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
     uint8_t size = message_neighbours_get_size(msg);
     if(pingpong.mode)
     {
-        usart_push_block((uint8_t *) msg, size + 2); // +2 dla CRC
+        usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",
                 TIME_FMT_DATA(*time), msg->macaddr, msg->ttl,
                 msg->count);
@@ -133,7 +133,8 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
         if(!msg->ttl)
             return;
 
-        MessageNeighbours *forward = (MessageNeighbours *) txbuffer_get(size);
+        MessageNeighbours *forward =
+            (MessageNeighbours *) control_txbuffer_get(size);
 
         if(!forward)
         {
@@ -143,8 +144,7 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
 
         memcpy(forward, msg, size);
         -- forward->ttl;
-        txbuffer_commit(size);
-        return;
+        control_txbuffer_commit(size);
     }
 }
 
@@ -155,7 +155,7 @@ void put_neighbours_message(void)
                     valid_neighbours * sizeof(NeighbourInfo);
 
     MessageNeighbours *msg =
-        (MessageNeighbours *) txbuffer_get(size);
+        (MessageNeighbours *) control_txbuffer_get(size);
 
     if(!msg)
         return;
@@ -183,10 +183,10 @@ void put_neighbours_message(void)
         ++ m;
     }
 
-    txbuffer_commit(size);
+    control_txbuffer_commit(size);
     if(pingpong.mode)
     {
-        usart_push_block((uint8_t *) msg, size + 2); // +2 dla CRC
+        usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",
                 (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->ttl,
                 msg->count);
@@ -241,6 +241,9 @@ void validate_neighbours(void)
 
 uint8_t update_node(const uint16_t macaddr)
 {
+    if(macaddr == iinic_mac || macaddr == device_macaddr)
+        return 0;
+
     Node *node = neighbours.node;
     uint8_t n = 0;
 

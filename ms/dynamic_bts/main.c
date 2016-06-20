@@ -4,26 +4,30 @@
 #include "protocol/messages.h"
 
 uint16_t    device_macaddr;
+uint8_t     *control_txbuffer_ptr;
+uint8_t     *data_txbuffer;
+uint8_t     *data_txbuffer_ptr;
+uint8_t     control_txbuffer[SETTINGS_CONTROL_TXBUFFER_SIZE];
 uint8_t     rxbuffer[SETTINGS_RXBUFFER_SIZE];
-uint8_t     txbuffer[SETTINGS_TXBUFFER_SIZE];
-uint8_t     *txbuffer_ptr;
 
 struct NeighbourhoodData    neighbourhood;
 struct NeighboursData       neighbours;
 struct PingPongData         pingpong;
+struct RequestData          request;
 struct SynchronizationData  synchronization;
 struct USARTData            usart;
 
 void iinic_main(void)
 {
-    device_macaddr  = iinic_mac;
-    txbuffer_ptr    = txbuffer;
-
+    control_txbuffer_ptr    = control_txbuffer;
+    data_txbuffer           = rxbuffer;
+    data_txbuffer_ptr       = data_txbuffer;
+    device_macaddr          = iinic_mac;
 
     neighbourhood.ttl = 0;
 
     neighbours.is_neighbour     = 0;
-    neighbours.node[0].macaddr  = device_macaddr;
+    neighbours.node[0].macaddr  = iinic_mac;
     neighbours.timer            = random();
 
     pingpong.mode   = PP_MODE_HIDDEN;

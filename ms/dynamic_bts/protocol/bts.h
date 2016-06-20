@@ -36,6 +36,7 @@ void bts_loop(void)
         validate_neighbourhood();
         validate_neighbours();
         validate_pingpong();
+        validate_request();
         validate_synchronization();
     }
 }
@@ -102,13 +103,25 @@ void control_listen_until(Time_cptr deadline)
     }
 }
 
-bool speak_until(Time_cptr deadline)
+bool control_speak_until(Time_cptr deadline)
 {
-    if(txbuffer_ptr == txbuffer)
+    if( (   synchronization.timer.valid ||
+#ifndef STATIC_ROOT
+            synchronization.root.macaddr == device_macaddr) &&
+#else
+            STATIC_ROOT == device_macaddr) &&
+#endif
+        (   synchronization.timer.trigger ||
+            !(synchronization.timer.counter % SETTINGS_SYNCHRONIZATION_PERIOD)))
+    {
+        put_synchronization_message();
+    }
+
+    if(control_txbuffer_ptr == control_txbuffer)
         return true;
 
     iinic_idle();
-    iinic_set_buffer(txbuffer, txbuffer_ptr - txbuffer);
+    iinic_set_buffer(control_txbuffer, control_txbuffer_ptr - control_txbuffer);
     iinic_tx();
 
     bool time_left = true;
@@ -120,7 +133,7 @@ bool speak_until(Time_cptr deadline)
 
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
-    txbuffer_ptr = txbuffer;
+    control_txbuffer_ptr = control_txbuffer;
     return time_left;
 }
 
@@ -143,30 +156,110 @@ void control_step(Time_cptr deadline)
 
     control_listen_until(&random_slot);
 
-    if( (   synchronization.timer.valid ||
-#ifndef STATIC_ROOT
-            synchronization.root.macaddr == device_macaddr) &&
-#else
-            STATIC_ROOT == device_macaddr) &&
-#endif
-        (   synchronization.timer.trigger ||
-            !(synchronization.timer.counter % SETTINGS_SYNCHRONIZATION_PERIOD)))
-    {
-        put_synchronization_message();
-    }
-
-    bool time_left = speak_until(deadline);
+    bool time_left = control_speak_until(deadline);
     if(time_left)
         control_listen_until(deadline);
 }
 
+void data_handle_messages(
+    Time_cptr time, __unused__ const uint8_t rssi,
+    uint8_t *buffer_ptr, uint8_t_cptr buffer_end)
+{
+    DEBUG(  TIME_FMT "|R|+%ub\r\n",
+            TIME_FMT_DATA(*time), buffer_end - buffer_ptr);
+
+    uint8_t count = 0;
+    while(buffer_ptr < buffer_end)
+    {
+        Message_cptr msg = (Message_cptr) buffer_ptr;
+        switch(validate_message(msg, &buffer_ptr, buffer_end))
+        {
+            case KIND_EOF:
+                ++ buffer_ptr;
+                break;
+        }
+    }
+
+    DEBUG(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
+}
+
+void data_listen_until(Time_cptr deadline)
+{
+    uint8_t signal;
+    while((signal = timed_poll( IINIC_RX_COMPLETE | IINIC_SIGNAL,
+                                deadline)))
+    {
+        if(signal & IINIC_RX_COMPLETE)
+        {
+            data_handle_messages(
+                (Time_cptr) &iinic_rx_timing,
+                _scale_rssi(iinic_rx_rssi),
+                rxbuffer, iinic_buffer_ptr);
+
+            iinic_rx();
+        }
+
+        if(signal & IINIC_SIGNAL)
+            handle_usart();
+    }
+}
+
+bool data_speak_until(Time_cptr deadline)
+{
+    if(data_txbuffer_ptr == data_txbuffer)
+        return true;
+
+    iinic_idle();
+    iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
+    iinic_tx();
+
+    bool time_left = true;
+    if(!timed_poll(IINIC_TX_COMPLETE, deadline))
+    {
+        time_left = false;
+        iinic_idle();
+    }
+
+    iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
+    iinic_rx();
+    data_txbuffer_ptr = data_txbuffer;
+    return time_left;
+}
+
 void data_step(Time_cptr deadline)
 {
-    // slots
-    // TODO
-    while(time_cmp_now(deadline) < 0)
+    Time deadline_part = *deadline;
+    time_add_i32(   &deadline_part,
+                    -SETTINGS_DATA_FRAME_TIME);
+
+    if(!request.assignment[0].ttl)
     {
+        data_listen_until(deadline);
+        return;
     }
+
+    Assignment *assignment = request.assignment;
+    uint8_t step = 8 / assignment[0].size;
+    for(uint8_t i = 0, j = 1;
+        i * step < SETTINGS_DATA_SLOTS &&
+        time_cmp_now(deadline) < 0;
+        i = j, ++ j)
+    {
+        bool speak = assignment->slotmask[i / 8] & (i << (i % 8));
+        while(j * step < SETTINGS_DATA_SLOTS &&
+            !speak == !(assignment->slotmask[j / 8] & (1 << (j % 8))))
+            ++ j;
+
+        time_add_i32(&deadline_part,
+            (int32_t) (j - i) * step * SETTINGS_DATA_SLOT_TIME);
+
+        if(speak && !data_speak_until(&deadline_part))
+            continue;
+
+        data_listen_until(&deadline_part);
+    }
+
+    while(time_cmp_now(deadline) < 0);
 }
 
 #endif // __PROTOCOL_BTS_H__

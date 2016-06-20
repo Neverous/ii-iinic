@@ -84,6 +84,20 @@ void handle_usart_pingpong(Time_cptr time, MessagePingPong_cptr msg)
 
     pingpong.mode = msg->options & PP_MODE_MASK;
     pingpong.ttl = UINT8_MAX;
+
+    if(pingpong.mode == PP_MODE_MONITOR_MASTER)
+    {
+        device_macaddr &= 0xFF;
+        DEBUG(  TIME_FMT "| |MAC=0x%04x\r\n",
+                TIME_FMT_DATA(*time), device_macaddr);
+    }
+
+    else
+    {
+        device_macaddr = iinic_mac;
+        DEBUG(  TIME_FMT "| |MAC=0x%04x\r\n",
+                TIME_FMT_DATA(*time), device_macaddr);
+    }
 }
 
 void validate_pingpong(void)
@@ -95,7 +109,8 @@ void validate_pingpong(void)
     if(!pingpong.ttl)
     {
         pingpong.mode = PP_MODE_HIDDEN;
-        DEBUG(  TIME_FMT "| |PP_TIMEOUT\r\n", (uint16_t) 0, (uint32_t) 0);
+        device_macaddr = iinic_mac;
+        DEBUG(TIME_FMT "| |PP_TIMEOUT\r\n", (uint16_t) 0, (uint32_t) 0);
     }
 }
 
