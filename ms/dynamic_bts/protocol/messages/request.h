@@ -60,16 +60,25 @@ void message_request_set_count(MessageRequest *msg, uint16_t count)
 
 typedef struct assignment
 {
-    uint8_t ttl;
-    uint8_t size;
-    uint8_t slotmask[8];
+    uint8_t     ttl;
+    uint32_t    slotmask;
 } Assignment;
+
+typedef struct request
+{
+    uint8_t source;
+    uint8_t destination;
+    uint16_t size;
+} Request;
 
 struct RequestData
 {
     uint16_t    blocks_left;
-    uint16_t    dst_macaddr;
+    uint8_t     destination;
     Assignment  assignment[SETTINGS_MAX_NODES];
+    uint8_t     queue_counter;
+    uint8_t     queue_size;
+    Request     queue[SETTINGS_REQUEST_QUEUE_SIZE];
 };
 
 extern struct RequestData request;
@@ -82,7 +91,7 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
                     const uint8_t rssi);
 
 void put_request_message(void);
-void calculate_assignment(uint8_t source, uint8_t destination, uint16_t size);
+void queue_request(uint8_t source, uint8_t destination, uint16_t size);
 
 void validate_request(void);
 
@@ -132,10 +141,18 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
         return;
     }
 
-    if(!request.assignment[n].ttl)
-        calculate_assignment(n, d, message_request_get_count(msg));
+    if(!message_request_get_count(msg))
+    {
+        request.assignment[n].ttl = 0;
+        return;
+    }
 
-    put_response_message(n);
+    if(!request.assignment[n].ttl)
+        queue_request(n, d, message_request_get_count(msg));
+
+    else
+        put_response_message(n);
+
     return;
 }
 
@@ -153,12 +170,12 @@ void put_request_message(void)
         uint8_t r = random() % neighbours_count();
         for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
         {
-            if(!(neighbours.is_neighbour & (1 << n)))
+            if(!(neighbours.is_neighbour & _BV(n)))
                 continue;
 
             if(!r)
             {
-                request.dst_macaddr = neighbours.node[n].macaddr;
+                request.destination = n;
                 break;
             }
 
@@ -168,7 +185,7 @@ void put_request_message(void)
 
     msg->kind           = KIND_REQUEST;
     msg->macaddr        = device_macaddr;
-    msg->dst_macaddr    = request.dst_macaddr;
+    msg->dst_macaddr    = neighbours.node[request.destination].macaddr;
     msg->ttl            = SETTINGS_MAX_HOP;
     message_request_set_count(msg, request.blocks_left);
     control_txbuffer_commit(sizeof(MessageRequest));
@@ -179,17 +196,39 @@ void put_request_message(void)
 }
 
 inline
-void calculate_assignment(uint8_t source, uint8_t destination, uint16_t size)
+void queue_request(uint8_t source, uint8_t destination, uint16_t size)
 {
-    // TODO
+    Request *queue = request.queue;
+    for(int r = 0; r < request.queue_size; ++ r)
+        if(queue[r].source == source &&
+            queue[r].destination == destination)
+        {
+            queue[r].size = size;
+            return;
+        }
+
+    if(request.queue_size >= SETTINGS_REQUEST_QUEUE_SIZE)
+        return;
+
+    queue = &request.queue[request.queue_size ++];
+    queue->source       = source;
+    queue->destination  = destination;
+    queue->size         = size;
 }
 
 inline
 void validate_request(void)
 {
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
+    {
         if(request.assignment[n].ttl)
             -- request.assignment[n].ttl;
+
+        if(!request.assignment[n].ttl)
+            neighbours.node[n].color = 0xFF;
+    }
+
+    ++ request.queue_counter;
 }
 
 #endif // __AVR__

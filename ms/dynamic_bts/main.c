@@ -10,6 +10,7 @@ uint8_t     *data_txbuffer_ptr;
 uint8_t     control_txbuffer[SETTINGS_CONTROL_TXBUFFER_SIZE];
 uint8_t     rxbuffer[SETTINGS_RXBUFFER_SIZE];
 
+struct DataData             data;
 struct NeighbourhoodData    neighbourhood;
 struct NeighboursData       neighbours;
 struct PingPongData         pingpong;
@@ -23,6 +24,9 @@ void iinic_main(void)
     data_txbuffer           = rxbuffer;
     data_txbuffer_ptr       = data_txbuffer;
     device_macaddr          = iinic_mac;
+
+    for(uint8_t s = 0; s < SETTINGS_MAX_NODES; ++ s)
+        data.stats.in[s] = data.stats.out[s] = 0;
 
     neighbourhood.ttl = 0;
 

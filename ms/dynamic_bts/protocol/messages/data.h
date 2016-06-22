@@ -2,6 +2,7 @@
 #define __PROTOCOL_MESSAGES_DATA_H__
 
 #include "common.h"
+#include "neighbours.h"
 
 //
 // MessageData
@@ -39,7 +40,63 @@ uint8_t message_data_get_size(MessageData_cptr msg)
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
 
-// TODO
+struct DataData
+{
+    struct
+    {
+        uint16_t in[SETTINGS_MAX_NODES];
+        uint16_t out[SETTINGS_MAX_NODES];
+    } stats;
+};
+
+extern struct DataData data;
+
+extern uint8_t update_node(const uint16_t macaddr);
+void handle_data(Time_cptr time, MessageData_cptr msg, const uint8_t rssi);
+void put_data_message(uint8_t destination, uint8_t blocks);
+
+
+////////////////////////////////////////////////////////////////////////////////
+
+void handle_data(   Time_cptr time,
+                    MessageData_cptr msg,
+                    const uint8_t rssi)
+{
+    DEBUG(  TIME_FMT "|R|+DATA(%u,0x%04x,0x%04x,%u)\r\n",
+            TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
+            message_data_get_size(msg));
+
+    if(msg->dst_macaddr != device_macaddr)
+        return;
+
+    uint8_t n = update_node(msg->macaddr);
+    if(n == SETTINGS_MAX_NODES)
+        return;
+
+    ++ data.stats.in[n];
+}
+
+void put_data_message(uint8_t destination, uint8_t blocks)
+{
+    uint8_t size = sizeof(MessageData) + blocks * 8;
+
+    MessageData *msg = (MessageData *) data_txbuffer_get(size);
+
+    if(!msg)
+        return;
+
+    msg->kind           = KIND_DATA;
+    msg->size           = blocks;
+    msg->macaddr        = device_macaddr;
+    msg->dst_macaddr    = neighbours.node[destination].macaddr;
+    //msg->data[] = random
+
+    data_txbuffer_commit(size);
+    ++ data.stats.out[destination];
+    DEBUG(  TIME_FMT "|R|-DATA(-1,0x%04x,0x%04x,%u)\r\n",
+            (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->dst_macaddr,
+            message_data_get_size(msg));
+}
 
 #endif // __AVR__
 #endif // __PROTOCOL_MESSAGES_DATA_H__

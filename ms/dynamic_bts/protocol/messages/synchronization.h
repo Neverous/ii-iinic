@@ -299,22 +299,20 @@ void validate_synchronization(void)
     ++ synchronization.timer.counter;
 }
 
-void recalculate_clock(Time_cptr time)
+uint8_t _find_leader(uint16_t *leader)
 {
     struct SynchronizationPoint *sync_point = synchronization.sync_point;
 
-    uint8_t     s;
-    uint16_t    leader = 0;
-    uint8_t     count = 0;
-    for(s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+    uint8_t count = 0;
+    for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(!sync_point[s].ttl)
             continue;
 
         if(!count)
-            leader = sync_point[s].global_time.high;
+            *leader = sync_point[s].global_time.high;
 
-        if(leader == sync_point[s].global_time.high)
+        if(*leader == sync_point[s].global_time.high)
             ++ count;
 
         else
@@ -322,71 +320,91 @@ void recalculate_clock(Time_cptr time)
     }
 
     count = 0;
-    for(s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+    for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(!sync_point[s].ttl)
             continue;
 
-        if(leader == sync_point[s].global_time.high)
+        if(*leader == sync_point[s].global_time.high)
             ++ count;
     }
+
+    return count;
+}
+
+void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
+{
+    struct SynchronizationPoint *sync_point = synchronization.sync_point;
+
+    int64_t     new_offset      = 0;
+    uint64_t    new_last_sync   = 0;
+
+    NOTICE(TIME_FMT "| |FAST_SYNC(%u)\r\n", TIME_FMT_DATA(*time), count);
+    for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
+    {
+        if(!sync_point[s].ttl || leader != sync_point[s].global_time.high)
+            continue;
+
+        uint64_t _global_time =
+            (((uint64_t) sync_point[s].global_time.high) << 32) +
+            sync_point[s].global_time.low;
+
+        uint64_t _local_time =
+            (((uint64_t) sync_point[s].local_time.high) << 32) +
+            sync_point[s].local_time.low;
+
+        int64_t offset = (int64_t) (_global_time - _local_time);
+
+        new_offset      += offset;
+        new_last_sync   += _local_time;
+    }
+
+    new_offset      /= count;
+    new_last_sync   /= count;
+
+    DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
+            TIME_FMT_DATA(*time), synchronization.clock.add,
+            TIME_FMT_DATA(synchronization.clock.offset),
+            synchronization.clock.skew,
+            TIME_FMT_DATA(synchronization.clock.last_sync));
+
+    if(new_offset < 0)
+    {
+        synchronization.clock.add = false;
+        new_offset *= -1;
+    }
+
+    else
+        synchronization.clock.add = true;
+
+    synchronization.clock.offset.low        = new_offset;
+    synchronization.clock.offset.high       = new_offset >> 32;
+    synchronization.clock.skew              = 0;
+    synchronization.clock.last_sync.low     = new_last_sync;
+    synchronization.clock.last_sync.high    = new_last_sync >> 32;
+    synchronization.timer.trigger           = true;
+    synchronization.timer.valid             = true;
+
+    DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
+            TIME_FMT_DATA(*time), synchronization.clock.add,
+            TIME_FMT_DATA(synchronization.clock.offset),
+            synchronization.clock.skew,
+            TIME_FMT_DATA(synchronization.clock.last_sync));
+}
+
+void recalculate_clock(Time_cptr time)
+{
+    struct SynchronizationPoint *sync_point = synchronization.sync_point;
+
+    uint8_t     s;
+    uint16_t    leader;
+    uint8_t     count = _find_leader(&leader);
 
     int64_t     new_offset      = 0;
     uint64_t    new_last_sync   = 0;
     if(count < SETTINGS_SYNCHRONIZATION_POINTS / 2)
     {
-        NOTICE(TIME_FMT "| |FAST_SYNC(%u)\r\n", TIME_FMT_DATA(*time), count);
-        for(s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
-        {
-            if(!sync_point[s].ttl || leader != sync_point[s].global_time.high)
-                continue;
-
-            uint64_t _global_time =
-                (((uint64_t) sync_point[s].global_time.high) << 32) +
-                sync_point[s].global_time.low;
-
-            uint64_t _local_time =
-                (((uint64_t) sync_point[s].local_time.high) << 32) +
-                sync_point[s].local_time.low;
-
-            int64_t offset = (int64_t) (_global_time - _local_time);
-
-            new_offset      += offset;
-            new_last_sync   += _local_time;
-        }
-
-        new_offset      /= count;
-        new_last_sync   /= count;
-
-        DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-                TIME_FMT_DATA(*time), synchronization.clock.add,
-                TIME_FMT_DATA(synchronization.clock.offset),
-                synchronization.clock.skew,
-                TIME_FMT_DATA(synchronization.clock.last_sync));
-
-        if(new_offset < 0)
-        {
-            synchronization.clock.add = false;
-            new_offset *= -1;
-        }
-
-        else
-            synchronization.clock.add = true;
-
-        synchronization.clock.offset.low        = new_offset;
-        synchronization.clock.offset.high       = new_offset >> 32;
-        synchronization.clock.skew              = 0;
-        synchronization.clock.last_sync.low     = new_last_sync;
-        synchronization.clock.last_sync.high    = new_last_sync >> 32;
-        synchronization.timer.trigger           = true;
-        synchronization.timer.valid             = true;
-
-        DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-                TIME_FMT_DATA(*time), synchronization.clock.add,
-                TIME_FMT_DATA(synchronization.clock.offset),
-                synchronization.clock.skew,
-                TIME_FMT_DATA(synchronization.clock.last_sync));
-
+        recalculate_clock_fast(time, leader, count);
         return;
     }
 

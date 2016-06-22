@@ -16,8 +16,8 @@ void QGraphicsFixedView::setScene(QGraphicsScene *scene)
 
 void QGraphicsFixedView::resizeEvent(QResizeEvent *event)
 {
-	auto _width = width();
-	auto _height = height();
-	scene()->setSceneRect(-_width / 2 + 20, -_height / 2 + 20, _width - 20, _height - 20);
-	QGraphicsView::resizeEvent(event);
+    auto _width = width();
+    auto _height = height();
+    scene()->setSceneRect(-_width / 2 + 20, -_height / 2 + 20, _width - 20, _height - 20);
+    QGraphicsView::resizeEvent(event);
 }

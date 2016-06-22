@@ -6,8 +6,9 @@
 enum Settings
 {
     // GLOBAL
-    SETTINGS_MAX_NODES                  = 16,
+    SETTINGS_MAX_NODES                  = 18,
     SETTINGS_MAX_EDGES                  = 128,
+    SETTINGS_REQUEST_QUEUE_SIZE         = 4,
     SETTINGS_MAX_HOP                    = 1,
 
     // RADIO
@@ -19,15 +20,12 @@ enum Settings
     SETTINGS_RADIO_TX                   = IINIC_DEVIATION_120
                                         | IINIC_POWER_175,
     SETTINGS_CONTROL_TXBUFFER_SIZE      = 256,
-    SETTINGS_DATA_TXBUFFER_SIZE         = SETTINGS_RXBUFFER_SIZE, // Hoax
+    SETTINGS_DATA_TXBUFFER_SIZE         = SETTINGS_RXBUFFER_SIZE, // = RXBUFFER
 
     // BTS
     SETTINGS_INITIALIZATION_FRAMES      = 64,
     SETTINGS_CONTROL_FRAME_TIME         = 131072LU,
     SETTINGS_DATA_FRAME_TIME            = 393216LU,
-    SETTINGS_DATA_SLOTS                 = 64,
-    SETTINGS_DATA_SLOT_TIME             = SETTINGS_DATA_FRAME_TIME
-                                        / SETTINGS_DATA_SLOTS,
 
     // SYNCHRONIZATION
     SETTINGS_ROOT_TTL                   = 96,

@@ -1,6 +1,8 @@
 #ifndef __IINIC_WRAPPER_H__
 #define __IINIC_WRAPPER_H__
 
+#include <stdlib.h>
+#include <string.h>
 #include <util/crc16.h>
 
 #include "iinic/iinic.h"
@@ -53,6 +55,9 @@ void time_sub(Time *a, Time_cptr b);
 uint16_t crc16(uint8_t_cptr buf, uint16_t len);
 
 uint8_t _scale_rssi(uint16_t rssi);
+void swap(uint8_t *dst, uint8_t *src, uint8_t size);
+void swap_lowmem(uint8_t *dst, uint8_t *src, uint8_t size);
+void shuffle(uint8_t *array, uint8_t count, uint8_t size);
 
 
 void time_align(Time *current, int32_t alignment)
@@ -127,6 +132,41 @@ uint8_t _scale_rssi(uint16_t rssi)
         return 255;
 
     return rssi;
+}
+
+void swap(uint8_t *dst, uint8_t *src, uint8_t size)
+{
+    if(dst == src)
+        return;
+
+    uint8_t temp[size];
+    memcpy(temp, src, size);
+    memcpy(src, dst, size);
+    memcpy(dst, temp, size);
+}
+
+void swap_lowmem(uint8_t *dst, uint8_t *src, uint8_t size)
+{
+    if(dst == src)
+        return;
+
+    while(size)
+    {
+        uint8_t temp = *src;
+        *src ++ = *dst;
+        *dst ++ = temp;
+        -- size;
+    }
+}
+
+void shuffle(uint8_t *array, uint8_t count, uint8_t size)
+{
+    while(count > 1)
+    {
+        uint8_t position = random() % count;
+        -- count;
+        swap(array + size * count, array + size * position, size);
+    }
 }
 
 #endif // __IINIC_WRAPPER_H__

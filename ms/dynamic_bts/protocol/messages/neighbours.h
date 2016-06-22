@@ -54,7 +54,8 @@ uint8_t message_neighbours_get_size(MessageNeighbours_cptr msg)
 
 typedef struct node
 {
-    uint16_t macaddr;
+    uint16_t    macaddr;
+    uint8_t     color;
 } Node;
 
 typedef struct edge

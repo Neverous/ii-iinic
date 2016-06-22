@@ -6,12 +6,12 @@
 class QGraphicsFixedView: public QGraphicsView
 {
 public:
-	QGraphicsFixedView(QWidget *parent=nullptr);
+    QGraphicsFixedView(QWidget *parent=nullptr);
 
-	void setScene(QGraphicsScene *scene);
+    void setScene(QGraphicsScene *scene);
 
 protected:
-	void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
+    void resizeEvent(QResizeEvent *event) Q_DECL_OVERRIDE;
 };
 
 #endif // QGRAPHICSFIXEDVIEW_H

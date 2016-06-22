@@ -35,9 +35,9 @@ enum PingPong
 
     PP_MODE_HIDDEN          = 0,
     PP_MODE_MONITOR         = 2,
-    PP_MODE_MONITOR_MASTER  = 4,
-    PP_MODE_MASTER          = 6,
-    PP_MODE_MASK            = 6,
+    PP_MODE_MASK            = 2,
+
+    PP_OPTION_MASTER        = 4
 };
 
 typedef struct message_pingpong
@@ -85,7 +85,7 @@ void handle_usart_pingpong(Time_cptr time, MessagePingPong_cptr msg)
     pingpong.mode = msg->options & PP_MODE_MASK;
     pingpong.ttl = UINT8_MAX;
 
-    if(pingpong.mode == PP_MODE_MONITOR_MASTER)
+    if(msg->options & PP_OPTION_MASTER)
     {
         device_macaddr &= 0xFF;
         DEBUG(  TIME_FMT "| |MAC=0x%04x\r\n",

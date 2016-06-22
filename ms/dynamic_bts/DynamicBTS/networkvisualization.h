@@ -9,7 +9,7 @@
 
 class NetworkVisualization: public QGraphicsScene
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
     static constexpr int    FPS        = 30;
@@ -20,18 +20,18 @@ public:
     static constexpr qreal  PUSH_CONSTANT = 50.0;
 
 private:
-	int								timer_id;
-	QMap<quint16, NetworkNode *>	nodes;
+    int								timer_id;
+    QMap<quint16, NetworkNode *>	nodes;
 
 public:
-	NetworkVisualization();
+    NetworkVisualization();
     void clear();
 
     void update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
     void item_moved();
 
 protected:
-	void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
+    void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
 };
 
 #endif // NETWORKVISUALIZATION_H

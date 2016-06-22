@@ -7,22 +7,22 @@
 
 int main(int argc, char *argv[])
 {
-	qsrand(QTime::currentTime().msec());
+    qsrand(QTime::currentTime().msec());
 
-	QApplication app{argc, argv};
+    QApplication app{argc, argv};
 
-	{
-		// Load QDarkStyleSheet
-		QFile style(":qdarkstyle/style.qss");
-		Q_ASSERT(style.exists());
-		style.open(QFile::ReadOnly | QFile::Text);
-		app.setStyleSheet(style.readAll());
-	}
+    {
+        // Load QDarkStyleSheet
+        QFile style(":qdarkstyle/style.qss");
+        Q_ASSERT(style.exists());
+        style.open(QFile::ReadOnly | QFile::Text);
+        app.setStyleSheet(style.readAll());
+    }
 
-	SerialConnector connector;
+    SerialConnector connector;
 
-	GUI gui{&connector};
+    GUI gui{&connector};
 
-	gui.show();
-	return app.exec();
+    gui.show();
+    return app.exec();
 }
