@@ -61,6 +61,7 @@ void message_request_set_count(MessageRequest *msg, uint16_t count)
 typedef struct assignment
 {
     uint8_t     ttl;
+    uint8_t     priority;
     uint32_t    slotmask;
 } Assignment;
 
@@ -222,10 +223,17 @@ void validate_request(void)
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {
         if(request.assignment[n].ttl)
+        {
             -- request.assignment[n].ttl;
 
-        if(!request.assignment[n].ttl)
-            neighbours.node[n].color = 0xFF;
+            if(!request.assignment[n].ttl)
+                neighbours.node[n].color = 0xFF;
+        }
+
+        if( !request.assignment[n].ttl &&
+            !request.queue_counter &&
+            request.assignment[n].priority < 255)
+            ++ request.assignment[n].priority;
     }
 
     ++ request.queue_counter;

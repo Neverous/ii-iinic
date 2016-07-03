@@ -38,7 +38,10 @@ void iinic_main(void)
     pingpong.ttl    = 0;
 
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
-        request.assignment[n].ttl = 0;
+    {
+        request.assignment[n].ttl       = 0;
+        request.assignment[n].priority  = 32;
+    }
 
     synchronization.clock.seq_id    = 0;
 #ifndef STATIC_ROOT

@@ -142,6 +142,13 @@ bool control_speak_until(Time_cptr deadline)
         iinic_idle();
     }
 
+    else
+    {
+        DEBUG(  TIME_FMT "|R|-%ub\r\n",
+                TIME_FMT_DATA(*deadline),
+                control_txbuffer_ptr - control_txbuffer);
+    }
+
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
     control_txbuffer_ptr = control_txbuffer;
@@ -163,6 +170,11 @@ void control_step(Time_cptr deadline)
     if(!(neighbours.timer % SETTINGS_NEIGHBOURS_PERIOD))
     {
         put_neighbours_message();
+    }
+
+    if(!request.assignment[0].ttl && !(random() % SETTINGS_REQUEST_PERIOD))
+    {
+        put_request_message();
     }
 
     control_listen_until(&random_slot);
@@ -237,26 +249,36 @@ void data_listen_until(Time_cptr deadline)
     }
 }
 
-bool data_speak_until(Time_cptr deadline)
+void data_speak_until(Time_cptr deadline, uint8_t slots)
 {
     if(data_txbuffer_ptr == data_txbuffer)
-        return true;
+        return;
+
+    if(!request.blocks_left)
+        return;
+
+    const Node *node = neighbours.node;
+    iinic_idle();
+
+    uint8_t count = 0;
+    do
+    {
+        data_txbuffer_ptr = data_txbuffer;
+        uint8_t size = 16 + (random() % 16);
+        size = min(size, request.blocks_left);
+        put_data_message(node[request.destination].macaddr, size);
+        iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
+        iinic_tx();
+        -- slots;
+        ++ count;
+    }
+    while(timed_poll(IINIC_TX_COMPLETE, deadline) && slots);
+
+    DEBUG(TIME_FMT "|R|-%udm\r\n", TIME_FMT_DATA(*deadline), count);
 
     iinic_idle();
-    iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
-    iinic_tx();
-
-    bool time_left = true;
-    if(!timed_poll(IINIC_TX_COMPLETE, deadline))
-    {
-        time_left = false;
-        iinic_idle();
-    }
-
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
-    data_txbuffer_ptr = data_txbuffer;
-    return time_left;
 }
 
 void data_step_client(Time_cptr deadline)
@@ -265,6 +287,7 @@ void data_step_client(Time_cptr deadline)
     time_add_i32(   &deadline_part,
                     -SETTINGS_DATA_FRAME_TIME);
 
+    DEBUG(TIME_FMT "|M|BTS CLIENT\r\n", TIME_FMT_DATA(deadline_part));
     const Assignment *assignment = request.assignment;
     if(!assignment[0].ttl)
     {
@@ -285,10 +308,11 @@ void data_step_client(Time_cptr deadline)
         time_add_i32(&deadline_part,
             (int32_t) (j - i) * SETTINGS_DATA_FRAME_TIME / 32);
 
-        if(speak && !data_speak_until(&deadline_part))
-            continue;
+        if(speak)
+            data_speak_until(&deadline_part, j - i);
 
-        data_listen_until(&deadline_part);
+        else
+            data_listen_until(&deadline_part);
     }
 }
 
@@ -320,10 +344,14 @@ void _color_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
     {
         uint16_t color_mask = 0;
         for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
-            if((neighbour[queue[r].source] & _BV(n)) &&
-                node[n].color < 16)
+            if(neighbour[queue[r].source] & _BV(n))
             {
-                color_mask |= _BV(node[n].color);
+                if(node[n].color < 16)
+                    color_mask |= _BV(node[n].color);
+
+                for(uint8_t n2 = 0; n2 < SETTINGS_MAX_NODES; ++ n)
+                    if(neighbour[n] & _BV(n2) && node[n2].color < 16)
+                        color_mask |= _BV(node[n2].color);
             }
 
         node[queue[r].source].color = __builtin_ctz(~color_mask);
@@ -336,14 +364,39 @@ void _color_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
 
         uint16_t color_mask = 0;
         for(uint8_t s = 0; s < SETTINGS_MAX_NODES; ++ s)
-            if((neighbour[n] & _BV(s)) &&
-                node[s].color < 16)
+            if(neighbour[n] & _BV(s))
             {
-                color_mask |= _BV(node[s].color);
+                if(node[s].color < 16)
+                    color_mask |= _BV(node[s].color);
+
+                for(uint8_t n2 = 0; n2 < SETTINGS_MAX_NODES; ++ n2)
+                    if(neighbour[s] & _BV(n2))
+                        color_mask |= _BV(node[n2].color);
             }
 
         node[n].color = __builtin_ctz(~color_mask);
     }
+}
+
+void _sort_requests_by_priority(void)
+{
+    Assignment *assignment = request.assignment;
+    Request *queue = request.queue;
+    bool done;
+    do
+    {
+        done = true;
+        for(uint8_t r = 1; r < request.queue_size; ++ r)
+            if(assignment[queue[r - 1].source].priority <
+                assignment[queue[r].source].priority)
+            {
+                done = false;
+                swap(   (uint8_t *) &queue[r - 1],
+                        (uint8_t *) &queue[r],
+                        sizeof(Request));
+            }
+    }
+    while(!done);
 }
 
 void _redo_existing_assignments(void)
@@ -375,6 +428,21 @@ void _redo_existing_assignments(void)
         if(!slotmask)
             continue;
 
+        uint8_t slots = __builtin_popcount(slotmask);
+        ttl = min(  max(queue[r].size / 192 / slots,
+                        SETTINGS_MAX_HOP * 8),
+                    ttl);
+
+        uint16_t possible = (uint16_t) ttl * slots;
+        if(possible > queue[r].size + queue[r].size / 2)
+        {
+            possible = queue[r].size + queue[r].size / 2;
+            ttl = (slots - 1 + possible) / slots;
+        }
+
+        if(assignment[queue[r].source].priority)
+            -- assignment[queue[r].source].priority;
+
         assignment[queue[r].source].ttl         = ttl;
         assignment[queue[r].source].slotmask    = slotmask;
         put_response_message(queue[r].source);
@@ -384,23 +452,66 @@ void _redo_existing_assignments(void)
 void _create_new_assignments(void)
 {
     Assignment *assignment = request.assignment;
-    //const Node *node = neighbours.node;
     Request *queue = request.queue;
-    for(uint8_t r = 0; r < request.queue_size; ++ r)
+    uint32_t free_slotmask = 0xFFFFFFFF;
+    for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {
-        if(assignment[queue[r].source].ttl)
+        if(!assignment[n].ttl)
             continue;
 
-        assignment[queue[r].source].ttl = 255;
+        bool valid = true;
+        for(uint8_t r = 0; r < request.queue_size && valid; ++ r)
+            valid = queue[r].source != n;
+
+        if(!valid)
+            continue;
+
+        free_slotmask &= ~assignment[n].slotmask;
+    }
+
+    if(!free_slotmask)
+        return;
+
+    uint32_t size_sum = 0;
+    for(uint8_t r = 0; r < request.queue_size; ++ r)
+        size_sum += queue[r].size;
+
+    uint8_t free_slots = __builtin_popcount(free_slotmask);
+    for(uint8_t r = 0; r < request.queue_size && free_slotmask; ++ r)
+    {
+        uint8_t n = queue[r].source;
+        if(assignment[n].ttl)
+            continue;
+
+        uint8_t slots = max(1,
+                            (uint32_t) free_slots * queue[r].size / size_sum);
+
+        uint8_t ttl = min(  max(queue[r].size / 192 / slots,
+                                SETTINGS_MAX_HOP * 8),
+                            255);
+
         uint32_t slotmask = 0;
-        // TODO
-        assignment[queue[r].source].slotmask = slotmask;
-        put_response_message(queue[r].source);
+        for(uint8_t b = 0; b < 32 && slots; ++ b)
+            if(free_slotmask & _BV(b))
+            {
+                free_slotmask &= ~_BV(b);
+                slotmask |= _BV(b);
+                -- slots;
+                -- free_slots;
+            }
+
+        if(assignment[n].priority)
+            -- assignment[n].priority;
+
+        assignment[n].ttl       = ttl;
+        assignment[n].slotmask  = slotmask;
+        put_response_message(n);
     }
 }
 
 void data_step_server(Time_cptr deadline)
 {
+    DEBUG(TIME_FMT "|M|BTS SERVER\r\n", TIME_FMT_DATA(*deadline));
     if(request.queue_size < SETTINGS_REQUEST_QUEUE_SIZE &&
         request.queue_counter % (SETTINGS_REQUEST_QUEUE_SIZE * 2))
     {
@@ -417,6 +528,9 @@ void data_step_server(Time_cptr deadline)
         _color_neighbours(neighbour);
         data_listen_once();
     }
+
+    _sort_requests_by_priority();
+    data_listen_once();
 
     _redo_existing_assignments();
     data_listen_once();
@@ -439,7 +553,7 @@ void data_step(Time_cptr deadline)
     else
         data_step_client(deadline);
 
-    while(time_cmp_now(deadline) < 0);
+    data_listen_until(deadline);
 }
 
 #endif // __PROTOCOL_BTS_H__

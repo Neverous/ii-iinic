@@ -8,7 +8,6 @@ enum Settings
     // GLOBAL
     SETTINGS_MAX_NODES                  = 18,
     SETTINGS_MAX_EDGES                  = 128,
-    SETTINGS_REQUEST_QUEUE_SIZE         = 4,
     SETTINGS_MAX_HOP                    = 1,
 
     // RADIO
@@ -40,6 +39,10 @@ enum Settings
     // NEIGHBOURS
     SETTINGS_NEIGHBOUR_TTL              = 96,
     SETTINGS_NEIGHBOURS_PERIOD          = 64,
+
+    // REQUEST
+    SETTINGS_REQUEST_QUEUE_SIZE         = 4,
+    SETTINGS_REQUEST_PERIOD             = 16,
 };
 
 #define DEBUG_LEVEL 5
