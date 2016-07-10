@@ -11,7 +11,7 @@
 #include "messages/debug.h"
 #include "messages/neighbourhood.h"
 #include "messages/neighbours.h"
-#include "messages/pingpong.h"
+#include "messages/ping.h"
 #include "messages/request.h"
 #include "messages/response.h"
 #include "messages/synchronization.h"
@@ -40,10 +40,14 @@ uint8_t message_get_size(Message_cptr msg)
         return message_## name ## _get_size((Message ## Name ## _cptr) msg)
 
         CASE_KIND(DATA,             Data,               data);
+#ifndef __AVR__
         CASE_KIND(DEBUG,            Debug,              debug);
+#endif
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
         CASE_KIND(NEIGHBOURS,       Neighbours,         neighbours);
-        CASE_KIND(PINGPONG,         PingPong,           pingpong);
+#ifdef __AVR__
+        CASE_KIND(PING,             Ping,               ping);
+#endif
         CASE_KIND(REQUEST,          Request,            request);
         CASE_KIND(RESPONSE,         Response,           response);
         CASE_KIND(SYNCHRONIZATION,  Synchronization,    synchronization);

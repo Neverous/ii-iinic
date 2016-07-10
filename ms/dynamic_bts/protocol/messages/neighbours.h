@@ -4,7 +4,7 @@
 #include <string.h>
 
 #include "common.h"
-#include "pingpong.h"
+#include "ping.h"
 #include "synchronization.h"
 
 //
@@ -20,7 +20,7 @@
 //  [*]     neighbour[] - dane sąsiadów (adres MAC, moc odbioru, ttl)
 //
 
-#define KIND_NEIGHBOURS 0x6
+#define KIND_NEIGHBOURS 0x1
 
 struct neighbour;
 
@@ -106,7 +106,7 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
 
     update_neighbour(time, msg->macaddr, rssi);
     uint8_t size = message_neighbours_get_size(msg);
-    if(pingpong.mode)
+    if(ping.mode & P_MODE_MONITOR)
     {
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",
@@ -185,7 +185,7 @@ void put_neighbours_message(void)
     }
 
     control_txbuffer_commit(size);
-    if(pingpong.mode)
+    if(ping.mode & P_MODE_MONITOR)
     {
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",

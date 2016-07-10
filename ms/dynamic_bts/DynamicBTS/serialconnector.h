@@ -51,7 +51,7 @@ public:
     bool write_message_debug(const char* debug, quint8 len);
     bool write_message_neighbourhood();
     bool write_message_neighbours(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours);
-    bool write_message_pingpong(quint8 options);
+    bool write_message_ping(quint8 options);
     bool write_message_request(quint16 mac_address, quint16 count, quint8 ttl);
     bool write_message_response(quint16 mac_address, quint8 assignment_ttl, quint8 len, quint32 slotmask, quint8 ttl);
     bool write_message_synchronization(quint16 mac_address, quint16 root_mac_address, quint16 seq_id, quint64 global_time);

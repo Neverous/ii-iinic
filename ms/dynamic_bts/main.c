@@ -13,7 +13,7 @@ uint8_t     rxbuffer[SETTINGS_RXBUFFER_SIZE];
 struct DataData             data;
 struct NeighbourhoodData    neighbourhood;
 struct NeighboursData       neighbours;
-struct PingPongData         pingpong;
+struct PingData             ping;
 struct RequestData          request;
 struct SynchronizationData  synchronization;
 struct USARTData            usart;
@@ -34,8 +34,8 @@ void iinic_main(void)
     neighbours.node[0].macaddr  = iinic_mac;
     neighbours.timer            = random();
 
-    pingpong.mode   = PP_MODE_HIDDEN;
-    pingpong.ttl    = 0;
+    ping.mode   = P_MODE_HIDDEN;
+    ping.ttl    = 0;
 
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {

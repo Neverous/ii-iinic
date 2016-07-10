@@ -12,8 +12,8 @@ void handle_usart_message(Time_cptr time, Message_cptr msg)
 {
     switch(msg->kind)
     {
-        case KIND_PINGPONG:
-            handle_usart_pingpong(time, (MessagePingPong_cptr) msg);
+        case KIND_PING:
+            handle_usart_ping(time, (MessagePing_cptr) msg);
             break;
     }
 }

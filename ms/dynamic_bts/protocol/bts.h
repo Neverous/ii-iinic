@@ -36,7 +36,7 @@ void bts_loop(void)
 
         validate_neighbourhood();
         validate_neighbours();
-        validate_pingpong();
+        validate_ping();
         validate_request();
         validate_synchronization();
     }

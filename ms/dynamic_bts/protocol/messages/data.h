@@ -17,7 +17,7 @@
 //  [*]     data[]      - dane
 //
 
-#define KIND_DATA 0x7
+#define KIND_DATA 0x6
 
 typedef struct message_data
 {

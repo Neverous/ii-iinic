@@ -148,14 +148,14 @@ bool SerialConnector::write_message_neighbours(quint16 mac_address, const QList<
     return port->write((const char *) buffer, size + 2) == size + 2;
 }
 
-bool SerialConnector::write_message_pingpong(quint8 options)
+bool SerialConnector::write_message_ping(quint8 options)
 {
     uint8_t buffer[8] = {};
-    MessagePingPong *msg = (MessagePingPong *) buffer;
-    msg->kind		= KIND_PINGPONG;
+    MessagePing *msg = (MessagePing *) buffer;
+    msg->kind		= KIND_PING;
     msg->options	= options;
 
-    uint8_t size = message_pingpong_get_size(msg);
+    uint8_t size = message_ping_get_size(msg);
     *(uint16_t *) (buffer + size) = crc16(buffer, size);
     return port->write((const char *) buffer, size + 2) == size + 2;
 }
@@ -211,7 +211,7 @@ bool SerialConnector::write_message_synchronization(quint16 mac_address, quint16
 
 void SerialConnector::timerEvent(QTimerEvent *)
 {
-    write_message_pingpong(mode | option);
+    write_message_ping(mode | option);
 }
 
 void SerialConnector::handle_debug(const message_debug * const debug)

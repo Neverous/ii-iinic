@@ -19,7 +19,7 @@
 //  [48]    global_time     - globalny czas według nadawcy
 //
 
-#define KIND_SYNCHRONIZATION 0x1
+#define KIND_SYNCHRONIZATION 0x0
 
 typedef struct message_synchronization
 {

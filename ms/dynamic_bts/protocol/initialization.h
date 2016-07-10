@@ -48,7 +48,7 @@ void initialization_loop(void)
 
         validate_neighbours();
         validate_neighbourhood();
-        validate_pingpong();
+        validate_ping();
         validate_synchronization();
     }
 }
