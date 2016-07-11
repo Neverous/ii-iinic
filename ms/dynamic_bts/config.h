@@ -6,7 +6,7 @@
 enum Settings
 {
     // GLOBAL
-    SETTINGS_MAX_NODES                  = 18,
+    SETTINGS_MAX_NODES                  = 16,
     SETTINGS_MAX_EDGES                  = 128,
     SETTINGS_MAX_HOP                    = 1,
 
@@ -17,21 +17,17 @@ enum Settings
                                         | IINIC_RSSI_73,
     SETTINGS_RXBUFFER_SIZE              = 256,
     SETTINGS_RADIO_TX                   = IINIC_DEVIATION_120
-                                        | IINIC_POWER_175,
+                                        | IINIC_POWER_0,
     SETTINGS_CONTROL_TXBUFFER_SIZE      = 256,
     SETTINGS_DATA_TXBUFFER_SIZE         = SETTINGS_RXBUFFER_SIZE, // = RXBUFFER
 
     // BTS
     SETTINGS_INITIALIZATION_FRAMES      = 64,
     SETTINGS_CONTROL_FRAME_TIME         = 131072LU,
-    SETTINGS_DATA_FRAME_TIME            = 393216LU,
+    SETTINGS_DATA_FRAME_TIME            = 655360LU,
 
-    // SYNCHRONIZATION
-    SETTINGS_ROOT_TTL                   = 96,
-    SETTINGS_SYNCHRONIZATION_TTL        = 255,
-
-    SETTINGS_SYNCHRONIZATION_PERIOD     = 32,
-    SETTINGS_SYNCHRONIZATION_POINTS     = 8,
+    // GATHER
+    SETTINGS_GATHER_PERIOD              = 192,
 
     // NEIGHBOURHOOD
     SETTINGS_NEIGHBOURHOOD_TTL          = 16,
@@ -42,7 +38,14 @@ enum Settings
 
     // REQUEST
     SETTINGS_REQUEST_QUEUE_SIZE         = 4,
-    SETTINGS_REQUEST_PERIOD             = 16,
+    SETTINGS_REQUEST_PROBABILITY        = 16,
+
+    // SYNCHRONIZATION
+    SETTINGS_ROOT_TTL                   = 96,
+    SETTINGS_SYNCHRONIZATION_TTL        = 255,
+
+    SETTINGS_SYNCHRONIZATION_PERIOD     = 32,
+    SETTINGS_SYNCHRONIZATION_POINTS     = 8,
 };
 
 #define DEBUG_LEVEL 5

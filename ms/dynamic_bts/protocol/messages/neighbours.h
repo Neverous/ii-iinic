@@ -13,7 +13,7 @@
 //  poznać strukturę sieci dla lepszego przydziału slotów
 //  rozmiar: 4-132 bajtów
 //
-//  [3]     kind        - typ wiadomości = 0x6
+//  [3]     kind        - typ wiadomości = 0x1
 //  [5]     count       - aktualna liczba sąsiadów
 //  [16]    macaddr     - adres MAC nadawcy
 //  [8]     ttl         - dla obsługi multi-hop
@@ -56,6 +56,7 @@ typedef struct node
 {
     uint16_t    macaddr;
     uint8_t     color;
+    uint8_t     ttl;
 } Node;
 
 typedef struct edge
@@ -68,7 +69,6 @@ typedef struct edge
 
 struct NeighboursData
 {
-    uint8_t     timer;
     uint16_t    is_neighbour;
     Node        node[SETTINGS_MAX_NODES];
     Edge        edge[SETTINGS_MAX_EDGES];
@@ -106,13 +106,15 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
 
     update_neighbour(time, msg->macaddr, rssi);
     uint8_t size = message_neighbours_get_size(msg);
+#ifdef __USART_COMPLEX__
     if(ping.mode & P_MODE_MONITOR)
     {
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
-        DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",
+        DEBUG(  TIME_FMT "|U|-NS(0x%04x,%u,%u)\r\n",
                 TIME_FMT_DATA(*time), msg->macaddr, msg->ttl,
                 msg->count);
     }
+#endif // __USART_COMPLEX__
 
     uint8_t src = update_node(msg->macaddr);
     if(src != SETTINGS_MAX_NODES)
@@ -185,16 +187,18 @@ void put_neighbours_message(void)
     }
 
     control_txbuffer_commit(size);
+#ifdef __USART_COMPLEX__
     if(ping.mode & P_MODE_MONITOR)
     {
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
-        DEBUG(  TIME_FMT "|U|-NS(-1,0x%04x,%u,%u)\r\n",
-                (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->ttl,
+        DEBUG(  TIME_NULL "|U|-NS(0x%04x,%u,%u)\r\n",
+                msg->macaddr, msg->ttl,
                 msg->count);
     }
+#endif // __USART_COMPLEX__
 
-    DEBUG(  TIME_FMT "|R|-NS(-1,0x%04x,%u,%u)\r\n",
-            (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->ttl,
+    DEBUG(  TIME_NULL "|R|-NS(0x%04x,%u,%u)\r\n",
+            msg->macaddr, msg->ttl,
             msg->count);
 }
 
@@ -221,7 +225,6 @@ void update_neighbour(  Time_cptr time,
 
 void validate_neighbours(void)
 {
-    ++ neighbours.timer;
     Edge *edge = neighbours.edge;
     neighbours.is_neighbour = 0;
     for(uint8_t e = 0; e < SETTINGS_MAX_EDGES; ++ e)
@@ -238,6 +241,13 @@ void validate_neighbours(void)
         if(!edge[e].destination)
             neighbours.is_neighbour |= _BV(edge[e].source);
     }
+
+    Node *node = neighbours.node;
+    for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
+    {
+        if(node[n].ttl)
+            -- node[n].ttl;
+    }
 }
 
 uint8_t update_node(const uint16_t macaddr)
@@ -246,20 +256,33 @@ uint8_t update_node(const uint16_t macaddr)
         return 0;
 
     Node *node = neighbours.node;
-    uint8_t n = 0;
+    uint8_t n = 1;
 
     while(n < SETTINGS_MAX_NODES && node[n].macaddr != macaddr)
         ++ n;
 
     if(n == SETTINGS_MAX_NODES)
     {
-        n = 0;
+        n = 1;
         while(n < SETTINGS_MAX_NODES && node[n].macaddr)
             ++ n;
 
+        if(n == SETTINGS_MAX_NODES)
+        {
+            n = 1;
+            while(n < SETTINGS_MAX_NODES && node[n].ttl)
+                ++ n;
+        }
+
         if(n != SETTINGS_MAX_NODES)
+        {
             node[n].macaddr = macaddr;
+            node[n].color   = 0xFF;
+        }
     }
+
+    if(n != SETTINGS_MAX_NODES)
+        node[n].ttl     = 255;
 
     return n;
 }

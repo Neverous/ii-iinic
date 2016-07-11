@@ -10,12 +10,12 @@ struct message_neighbours;
 enum ControlMode
 {
     MODE_HIDDEN			= 0,
-    MODE_MONITOR		= 2,
+    MODE_MONITOR		= 1,
 };
 
 enum Option
 {
-    OPTION_MASTER       = 4,
+    OPTION_MASTER       = 2,
 };
 
 class SerialConnector: public QObject

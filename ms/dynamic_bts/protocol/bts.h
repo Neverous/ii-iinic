@@ -39,6 +39,7 @@ void bts_loop(void)
         validate_ping();
         validate_request();
         validate_synchronization();
+        ++ timer;
     }
 }
 
@@ -55,10 +56,8 @@ void control_handle_messages(
         Message_cptr msg = (Message_cptr) buffer_ptr;
         switch(validate_message(msg, &buffer_ptr, buffer_end))
         {
-            case KIND_SYNCHRONIZATION:
-                handle_synchronization(
-                    time, (MessageSynchronization_cptr) msg, rssi);
-
+            case KIND_GATHER:
+                handle_gather(time, (MessageGather_cptr) msg, rssi);
                 ++ count;
                 break;
 
@@ -84,13 +83,20 @@ void control_handle_messages(
                 ++ count;
                 break;
 
+            case KIND_SYNCHRONIZATION:
+                handle_synchronization(
+                    time, (MessageSynchronization_cptr) msg, rssi);
+
+                ++ count;
+                break;
+
             case KIND_EOF:
                 ++ buffer_ptr;
                 break;
         }
     }
 
-    DEBUG(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
+    NOTICE(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
 }
 
 void control_listen_until(Time_cptr deadline)
@@ -109,21 +115,23 @@ void control_listen_until(Time_cptr deadline)
             iinic_rx();
         }
 
+#ifdef __USART_COMPLEX__
         if(signal & IINIC_SIGNAL)
             handle_usart();
+#endif
     }
 }
 
 bool control_speak_until(Time_cptr deadline)
 {
-    if( (   synchronization.timer.valid ||
+    if( (   synchronization.valid ||
 #ifndef STATIC_ROOT
             synchronization.root.macaddr == device_macaddr) &&
 #else
             STATIC_ROOT == device_macaddr) &&
 #endif
-        (   synchronization.timer.trigger ||
-            !(synchronization.timer.counter % SETTINGS_SYNCHRONIZATION_PERIOD)))
+        (   synchronization.trigger ||
+            !(timer % SETTINGS_SYNCHRONIZATION_PERIOD)))
     {
         put_synchronization_message();
     }
@@ -167,14 +175,25 @@ void control_step(Time_cptr deadline)
         put_neighbourhood_message();
     }
 
-    if(!(neighbours.timer % SETTINGS_NEIGHBOURS_PERIOD))
+    if(!(timer % SETTINGS_NEIGHBOURS_PERIOD))
     {
         put_neighbours_message();
     }
 
-    if(!request.assignment[0].ttl && !(random() % SETTINGS_REQUEST_PERIOD))
+#ifndef STATIC_ROOT
+    if(synchronization.root.macaddr != device_macaddr &&
+#else
+    if(STATIC_ROOT != device_macaddr &&
+#endif
+        !request.assignment[0].ttl &&
+        !(random() % SETTINGS_REQUEST_PROBABILITY))
     {
         put_request_message();
+    }
+
+    if(!(timer % SETTINGS_GATHER_PERIOD))
+    {
+        put_gather_message();
     }
 
     control_listen_until(&random_slot);
@@ -202,13 +221,20 @@ void data_handle_messages(
                 ++ count;
                 break;
 
+            case KIND_SYNCHRONIZATION:
+                handle_synchronization(
+                    time, (MessageSynchronization_cptr) msg, rssi);
+
+                ++ count;
+                break;
+
             case KIND_EOF:
                 ++ buffer_ptr;
                 break;
         }
     }
 
-    DEBUG(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
+    NOTICE(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
 }
 
 void data_listen_once(void)
@@ -224,8 +250,10 @@ void data_listen_once(void)
         iinic_rx();
     }
 
+#ifdef __USART_COMPLEX__
     if(signal & IINIC_SIGNAL)
         handle_usart();
+#endif
 }
 
 void data_listen_until(Time_cptr deadline)
@@ -244,50 +272,53 @@ void data_listen_until(Time_cptr deadline)
             iinic_rx();
         }
 
+#ifdef __USART_COMPLEX__
         if(signal & IINIC_SIGNAL)
             handle_usart();
+#endif
     }
 }
 
-void data_speak_until(Time_cptr deadline, uint8_t slots)
+bool data_speak_until(Time_cptr deadline)
 {
-    if(data_txbuffer_ptr == data_txbuffer)
-        return;
+    if(!request.bytes_left)
+        return true;
 
-    if(!request.blocks_left)
-        return;
-
-    const Node *node = neighbours.node;
     iinic_idle();
 
-    uint8_t count = 0;
-    do
+    uint8_t size = (random() % 16) + 16;
+    size = min(size, request.bytes_left / 8);
+    data_txbuffer_ptr = data_txbuffer;
+    put_data_message(request.destination, size);
+    request.bytes_left -= size * 8;
+
+    iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
+    iinic_tx();
+
+    bool time_left = true;
+    if(!timed_poll(IINIC_TX_COMPLETE, deadline))
     {
-        data_txbuffer_ptr = data_txbuffer;
-        uint8_t size = 16 + (random() % 16);
-        size = min(size, request.blocks_left);
-        put_data_message(node[request.destination].macaddr, size);
-        iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
-        iinic_tx();
-        -- slots;
-        ++ count;
+        time_left = false;
+        iinic_idle();
     }
-    while(timed_poll(IINIC_TX_COMPLETE, deadline) && slots);
 
-    DEBUG(TIME_FMT "|R|-%udm\r\n", TIME_FMT_DATA(*deadline), count);
+    else
+    {
+        DEBUG(  TIME_FMT "|R|-%ub\r\n",
+                TIME_FMT_DATA(*deadline),
+                data_txbuffer_ptr - data_txbuffer);
+    }
 
-    iinic_idle();
     iinic_set_buffer(rxbuffer, SETTINGS_RXBUFFER_SIZE);
     iinic_rx();
+    return time_left;
 }
 
 void data_step_client(Time_cptr deadline)
 {
     Time deadline_part = *deadline;
-    time_add_i32(   &deadline_part,
-                    -SETTINGS_DATA_FRAME_TIME);
+    time_add_i32(&deadline_part, -SETTINGS_DATA_FRAME_TIME);
 
-    DEBUG(TIME_FMT "|M|BTS CLIENT\r\n", TIME_FMT_DATA(deadline_part));
     const Assignment *assignment = request.assignment;
     if(!assignment[0].ttl)
     {
@@ -295,24 +326,27 @@ void data_step_client(Time_cptr deadline)
         return;
     }
 
-    for(uint8_t i = 0, j = 1;
-        i < 32 &&
-        time_cmp_now(deadline) < 0;
-        i = j, ++ j)
+    for(uint8_t i = 0, j = 1; i < 16; i = j, ++ j)
     {
-        bool speak = assignment->slotmask & _BV(i);
-        while(j < 32 &&
-            !speak == !(assignment->slotmask & _BV(j)))
-            ++ j;
+        if(assignment->slotmask & _BV(i))
+        {
+            time_add_i32(   &deadline_part,
+                            (int32_t) SETTINGS_DATA_FRAME_TIME / 16);
 
-        time_add_i32(&deadline_part,
-            (int32_t) (j - i) * SETTINGS_DATA_FRAME_TIME / 32);
-
-        if(speak)
-            data_speak_until(&deadline_part, j - i);
+            if(!data_speak_until(&deadline_part))
+                continue;
+        }
 
         else
-            data_listen_until(&deadline_part);
+        {
+            while(j < 16 && !(assignment->slotmask & _BV(j)))
+                ++ j;
+
+            time_add_i32(   &deadline_part,
+                            (int32_t) (j - i) * SETTINGS_DATA_FRAME_TIME / 16);
+        }
+
+        data_listen_until(&deadline_part);
     }
 }
 
@@ -349,7 +383,7 @@ void _color_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
                 if(node[n].color < 16)
                     color_mask |= _BV(node[n].color);
 
-                for(uint8_t n2 = 0; n2 < SETTINGS_MAX_NODES; ++ n)
+                for(uint8_t n2 = 0; n2 < SETTINGS_MAX_NODES; ++ n2)
                     if(neighbour[n] & _BV(n2) && node[n2].color < 16)
                         color_mask |= _BV(node[n2].color);
             }
@@ -407,7 +441,7 @@ void _redo_existing_assignments(void)
     for(uint8_t r = 0; r < request.queue_size; ++ r)
     {
         uint8_t ttl = 255;
-        uint32_t slotmask = 0;
+        uint16_t slotmask = 0;
         for(uint8_t n = 0 ; n < SETTINGS_MAX_NODES; ++ n)
         {
             if(assignment[n].ttl < SETTINGS_MAX_HOP)
@@ -428,7 +462,7 @@ void _redo_existing_assignments(void)
         if(!slotmask)
             continue;
 
-        uint8_t slots = __builtin_popcount(slotmask);
+        uint8_t slots = __builtin_popcountll(slotmask);
         ttl = min(  max(queue[r].size / 192 / slots,
                         SETTINGS_MAX_HOP * 8),
                     ttl);
@@ -453,7 +487,7 @@ void _create_new_assignments(void)
 {
     Assignment *assignment = request.assignment;
     Request *queue = request.queue;
-    uint32_t free_slotmask = 0xFFFFFFFF;
+    uint16_t free_slotmask = 0xFFFF;
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {
         if(!assignment[n].ttl)
@@ -476,7 +510,7 @@ void _create_new_assignments(void)
     for(uint8_t r = 0; r < request.queue_size; ++ r)
         size_sum += queue[r].size;
 
-    uint8_t free_slots = __builtin_popcount(free_slotmask);
+    uint8_t free_slots = __builtin_popcountll(free_slotmask);
     for(uint8_t r = 0; r < request.queue_size && free_slotmask; ++ r)
     {
         uint8_t n = queue[r].source;
@@ -490,8 +524,8 @@ void _create_new_assignments(void)
                                 SETTINGS_MAX_HOP * 8),
                             255);
 
-        uint32_t slotmask = 0;
-        for(uint8_t b = 0; b < 32 && slots; ++ b)
+        uint16_t slotmask = 0;
+        for(uint8_t b = 0; b < 16 && slots; ++ b)
             if(free_slotmask & _BV(b))
             {
                 free_slotmask &= ~_BV(b);
@@ -511,9 +545,8 @@ void _create_new_assignments(void)
 
 void data_step_server(Time_cptr deadline)
 {
-    DEBUG(TIME_FMT "|M|BTS SERVER\r\n", TIME_FMT_DATA(*deadline));
     if(request.queue_size < SETTINGS_REQUEST_QUEUE_SIZE &&
-        request.queue_counter % (SETTINGS_REQUEST_QUEUE_SIZE * 2))
+        timer % (SETTINGS_REQUEST_QUEUE_SIZE * 2))
     {
         data_listen_until(deadline);
         return;

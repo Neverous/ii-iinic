@@ -11,7 +11,7 @@
 //  oraz synchronizacji czasu
 //    rozmiar: 12 bajtów
 //
-//  [3]     kind            - typ wiadomości = 0x1
+//  [3]     kind            - typ wiadomości = 0x0
 //  [5]     unused          - nieużywane
 //  [16]    macaddr         - adres MAC nadawcy
 //  [16]    root_macaddr    - aktualny korzeń nadawcy
@@ -65,12 +65,8 @@ struct SynchronizationData
         uint8_t prev_seq_id;
     } clock;
 
-    struct
-    {
-        bool    valid;
-        bool    trigger;
-        uint8_t counter;
-    } timer;
+    bool    valid;
+    bool    trigger;
 
 #ifndef STATIC_ROOT
     struct
@@ -119,7 +115,7 @@ void recalculate_clock(Time_cptr time);
 void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
                             const uint8_t rssi)
 {
-    DEBUG(  TIME_FMT "|R|+SYNC(%u,0x%04x,0x%04x,%u," TIME_FMT ")\r\n",
+    DEBUG(  TIME_FMT "|R|+SYNC(%u,0x%04x,0x%04x,%u," TIME_FMT_COMPACT ")\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr,
 #ifndef STATIC_ROOT
             msg->root_macaddr,
@@ -147,7 +143,7 @@ void put_synchronization_message(void)
     if(!msg)
         return;
 
-    synchronization.timer.trigger = false;
+    synchronization.trigger = false;
 
     msg->kind           = KIND_SYNCHRONIZATION;
     msg->macaddr        = device_macaddr;
@@ -166,7 +162,7 @@ void put_synchronization_message(void)
 #endif
         ++ synchronization.clock.seq_id;
 
-    DEBUG(  TIME_FMT "|R|-SYNC(-1,0x%04x,0x%04x,%u," TIME_FMT ")\r\n",
+    DEBUG(  TIME_FMT "|R|-SYNC(0x%04x,0x%04x,%u," TIME_FMT_COMPACT ")\r\n",
             TIME_FMT_DATA(local_time), msg->macaddr,
 #ifndef STATIC_ROOT
             msg->root_macaddr,
@@ -236,7 +232,7 @@ void update_synchronization_point(
             &&  (int8_t) (seq_id - synchronization.clock.prev_seq_id) <= 0)
             return;
 
-        DEBUG(  TIME_FMT "| |ROOT=0x%04x\r\n",
+        INFO(   TIME_FMT "| |ROOT=0x%04x\r\n",
                 TIME_FMT_DATA(*local_time), root_macaddr);
 
         synchronization.root.macaddr = root_macaddr;
@@ -287,16 +283,13 @@ void validate_synchronization(void)
 
     else if(synchronization.root.macaddr != device_macaddr)
     {
-        DEBUG(  TIME_FMT "| |ROOT=0x%04x\r\n",
-                (uint16_t) 0, (uint32_t) 0, device_macaddr);
+        INFO(TIME_NULL "| |ROOT=0x%04x\r\n", device_macaddr);
         synchronization.root.prev_macaddr   = synchronization.root.macaddr;
         synchronization.clock.prev_seq_id   = synchronization.clock.seq_id;
         synchronization.root.macaddr        = device_macaddr;
-        synchronization.timer.trigger       = true;
+        synchronization.trigger             = true;
     }
 #endif
-
-    ++ synchronization.timer.counter;
 }
 
 uint8_t _find_leader(uint16_t *leader)
@@ -362,8 +355,9 @@ void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
     new_offset      /= count;
     new_last_sync   /= count;
 
-    DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(*time), synchronization.clock.add,
+    DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+            TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
+            synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),
             synchronization.clock.skew,
             TIME_FMT_DATA(synchronization.clock.last_sync));
@@ -382,11 +376,12 @@ void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
     synchronization.clock.skew              = 0;
     synchronization.clock.last_sync.low     = new_last_sync;
     synchronization.clock.last_sync.high    = new_last_sync >> 32;
-    synchronization.timer.trigger           = true;
-    synchronization.timer.valid             = true;
+    synchronization.trigger                 = true;
+    synchronization.valid                   = true;
 
-    DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(*time), synchronization.clock.add,
+    NOTICE( TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+            TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
+            synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),
             synchronization.clock.skew,
             TIME_FMT_DATA(synchronization.clock.last_sync));
@@ -483,8 +478,9 @@ void recalculate_clock(Time_cptr time)
     if(local_sum != 0)
         new_skew = (float) offset_sum / local_sum;
 
-    DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(*time), synchronization.clock.add,
+    DEBUG(  TIME_FMT "| |OLD_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+            TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
+            synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),
             synchronization.clock.skew,
             TIME_FMT_DATA(synchronization.clock.last_sync));
@@ -508,11 +504,12 @@ void recalculate_clock(Time_cptr time)
 
     synchronization.clock.last_sync.low     = new_last_sync;
     synchronization.clock.last_sync.high    = new_last_sync >> 32;
-    synchronization.timer.trigger           = true;
-    synchronization.timer.valid             = true;
+    synchronization.trigger                 = true;
+    synchronization.valid                   = true;
 
-    DEBUG(  TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT ",%d," TIME_FMT ")\r\n",
-            TIME_FMT_DATA(*time), synchronization.clock.add,
+    NOTICE( TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+            TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
+            synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),
             synchronization.clock.skew,
             TIME_FMT_DATA(synchronization.clock.last_sync));

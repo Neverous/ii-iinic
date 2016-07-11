@@ -86,7 +86,8 @@ void SerialPortSelector::on_buttons_accepted()
     auto data = selection->model();
     int row = selection->selectedRows().first().row();
 
-    QString port_name = data->index(row, 1).data().toString();
+    QString port_name = data->index(row, 4).data().toString();
+    port_name = port_name.left(port_name.indexOf('(') - 1);
     qint32 baud_rate = ui->baud_rate_box->value();
 
     emit serial_port_selected(port_name, baud_rate);

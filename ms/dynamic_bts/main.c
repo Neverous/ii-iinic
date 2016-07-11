@@ -9,6 +9,7 @@ uint8_t     *data_txbuffer;
 uint8_t     *data_txbuffer_ptr;
 uint8_t     control_txbuffer[SETTINGS_CONTROL_TXBUFFER_SIZE];
 uint8_t     rxbuffer[SETTINGS_RXBUFFER_SIZE];
+uint8_t     timer;
 
 struct DataData             data;
 struct NeighbourhoodData    neighbourhood;
@@ -16,7 +17,9 @@ struct NeighboursData       neighbours;
 struct PingData             ping;
 struct RequestData          request;
 struct SynchronizationData  synchronization;
+#ifdef __USART_COMPLEX__
 struct USARTData            usart;
+#endif
 
 void iinic_main(void)
 {
@@ -32,7 +35,6 @@ void iinic_main(void)
 
     neighbours.is_neighbour     = 0;
     neighbours.node[0].macaddr  = iinic_mac;
-    neighbours.timer            = random();
 
     ping.mode   = P_MODE_HIDDEN;
     ping.ttl    = 0;
@@ -48,7 +50,8 @@ void iinic_main(void)
     synchronization.root.macaddr    = 0xFFFF;
     synchronization.root.ttl        = SETTINGS_INITIALIZATION_FRAMES;
 #endif
-    synchronization.timer.counter   = random();
+
+    timer = random();
 
     // DEVICE SETUP
     iinic_set_rx_knobs(SETTINGS_RADIO_RX);
@@ -56,7 +59,11 @@ void iinic_main(void)
     iinic_set_bitrate(SETTINGS_RADIO_BITRATE);
 
     // Setup USART
+#ifdef __USART_COMPLEX__
     iinic_usart_is_complex();
+#else
+    iinic_usart_is_debug();
+#endif
 
     // Setup LEDs
     iinic_led_off(IINIC_LED_GREEN);

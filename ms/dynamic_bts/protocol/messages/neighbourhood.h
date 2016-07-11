@@ -64,20 +64,19 @@ void handle_neighbourhood(  Time_cptr time,
 
 void put_neighbourhood_message(void)
 {
+    uint8_t size = sizeof(MessageNeighbourhood);
     MessageNeighbourhood *msg =
-        (MessageNeighbourhood *) control_txbuffer_get(
-                                            sizeof(MessageNeighbourhood));
+        (MessageNeighbourhood *) control_txbuffer_get(size);
 
     if(!msg)
         return;
 
-    Time local_time; time_get_now(&local_time);
-
     msg->kind           = KIND_NEIGHBOURHOOD;
     msg->unused         = 0x15; // 0b10101
 
-    control_txbuffer_commit(sizeof(MessageNeighbourhood));
+    control_txbuffer_commit(size);
 
+    Time local_time; time_get_now(&local_time);
     DEBUG(TIME_FMT "|R|-NHOOD\r\n", TIME_FMT_DATA(local_time));
 }
 

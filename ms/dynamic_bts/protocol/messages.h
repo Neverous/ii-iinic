@@ -9,6 +9,7 @@
 
 #include "messages/data.h"
 #include "messages/debug.h"
+#include "messages/gather.h"
 #include "messages/neighbourhood.h"
 #include "messages/neighbours.h"
 #include "messages/ping.h"
@@ -43,6 +44,7 @@ uint8_t message_get_size(Message_cptr msg)
 #ifndef __AVR__
         CASE_KIND(DEBUG,            Debug,              debug);
 #endif
+        CASE_KIND(GATHER,           Gather,             gather);
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
         CASE_KIND(NEIGHBOURS,       Neighbours,         neighbours);
 #ifdef __AVR__
@@ -66,7 +68,7 @@ uint8_t validate_message(   Message_cptr msg, uint8_t **buffer_ptr,
         return KIND_EOF;
 
     *buffer_ptr += 1;
-    if(crc16((uint8_t_cptr) msg, *buffer_ptr - (uint8_t_cptr) msg + size + 1))
+    if(crc16((uint8_t_cptr) msg, size + 2))
         return KIND_INVALID;
 
     *buffer_ptr += size + 1;

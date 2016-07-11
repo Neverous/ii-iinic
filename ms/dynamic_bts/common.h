@@ -15,6 +15,7 @@ extern uint8_t *data_txbuffer;
 extern uint8_t *data_txbuffer_ptr;
 extern uint8_t control_txbuffer[SETTINGS_CONTROL_TXBUFFER_SIZE];
 extern uint8_t rxbuffer[SETTINGS_RXBUFFER_SIZE];
+extern uint8_t timer;
 
 
 uint8_t *control_txbuffer_get(uint8_t bytes)

@@ -42,8 +42,10 @@ void initialization_loop(void)
                 iinic_rx();
             }
 
+#ifdef __USART_COMPLEX__
             if(signal & IINIC_SIGNAL)
                 handle_usart();
+#endif
         }
 
         validate_neighbours();
@@ -85,7 +87,7 @@ void initialization_handle_messages(
         }
     }
 
-    DEBUG(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
+    NOTICE(TIME_FMT "|R|+%um\r\n", TIME_FMT_DATA(*time), count);
 }
 
 #endif // __PROTOCOL_INITIALIZATION_H__

@@ -11,8 +11,11 @@
 #define must_read(x)    (*(const volatile typeof(x) *)&x)
 #define must_write(x)   (*(volatile typeof(x) *)&x)
 
-#define TIME_FMT            "%u:%lu"
+#define TIME_FMT            "%05u:%010lu"
+#define TIME_FMT_COMPACT    "%u:%lu"
 #define TIME_FMT_DATA(time) (time).high, (time).low
+#define TIME_NULL           "00000:0000000000"
+#define TIME_NULL_COMPACT   "0:0"
 
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL 5
@@ -26,7 +29,6 @@
 
 #define max(a, b)   ((a) > (b) ? (a) : (b))
 #define min(a, b)   ((a) < (b) ? (a) : (b))
-
 
 typedef union
 {

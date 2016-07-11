@@ -290,10 +290,11 @@ void debug_complex(const char *fmt, ...)
             if(!c)
                 break;
 
-            if('0' <= c && c <= '9')
-                zero_padding = c - '0';
-
-            c = pgm_read_byte(fmt ++);
+            while(c && '0' <= c && c <= '9')
+            {
+                zero_padding = zero_padding * 10 + c - '0';
+                c = pgm_read_byte(fmt ++);
+            }
         }
 
         if(c == 'l')

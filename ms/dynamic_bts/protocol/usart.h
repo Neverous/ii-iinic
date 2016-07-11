@@ -3,6 +3,7 @@
 
 #include "messages.h"
 
+#ifdef __USART_COMPLEX__
 uint8_t usart_get_packet_size(uint8_t kind)
 {
     return message_get_size((Message_cptr) &kind) + 2;
@@ -68,5 +69,7 @@ void handle_usart(void)
 
     DEBUG(TIME_FMT "|U|+%um\r\n", TIME_FMT_DATA(time), count);
 }
+
+#endif // __USART_COMPLEX__
 
 #endif // __PROTOCOL_USART_H__

@@ -9,7 +9,7 @@
 //  Wiadomość z danymi (pakiet),
 //  rozmiar: 5-253 bajty
 //
-//  [3]     kind        - typ wiadomości = 0x7
+//  [3]     kind        - typ wiadomości = 0x6
 //  [5]     size        - rozmiar = 0-31 (*8 = 0 - 248 bajtów)
 //                        liczony w 8 bajtowych blokach
 //  [16]    macaddr     - adres MAC nadawcy
@@ -64,7 +64,7 @@ void handle_data(   Time_cptr time,
 {
     DEBUG(  TIME_FMT "|R|+DATA(%u,0x%04x,0x%04x,%u)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
-            message_data_get_size(msg));
+            msg->size);
 
     if(msg->dst_macaddr != device_macaddr)
         return;
@@ -79,9 +79,7 @@ void handle_data(   Time_cptr time,
 void put_data_message(uint8_t destination, uint8_t blocks)
 {
     uint8_t size = sizeof(MessageData) + blocks * 8;
-
     MessageData *msg = (MessageData *) data_txbuffer_get(size);
-
     if(!msg)
         return;
 
@@ -89,13 +87,13 @@ void put_data_message(uint8_t destination, uint8_t blocks)
     msg->size           = blocks;
     msg->macaddr        = device_macaddr;
     msg->dst_macaddr    = neighbours.node[destination].macaddr;
-    //msg->data[] = random
+    for(uint8_t d = 0; d < blocks * 8; ++ d)
+        msg->data[d] = 0x55;
 
     data_txbuffer_commit(size);
     ++ data.stats.out[destination];
-    DEBUG(  TIME_FMT "|R|-DATA(-1,0x%04x,0x%04x,%u)\r\n",
-            (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->dst_macaddr,
-            message_data_get_size(msg));
+    DEBUG(  TIME_NULL "|R|-DATA(0x%04x,0x%04x,%u)\r\n",
+            msg->macaddr, msg->dst_macaddr, msg->size);
 }
 
 #endif // __AVR__

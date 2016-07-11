@@ -81,16 +81,22 @@ void handle_usart_ping(Time_cptr time, MessagePing_cptr msg)
 
     if(msg->options & P_OPTION_MASTER)
     {
-        device_macaddr &= 0xFF;
-        DEBUG(  TIME_FMT "| |MAC=0x%04x\r\n",
-                TIME_FMT_DATA(*time), device_macaddr);
+        if(device_macaddr & 0xFF00)
+        {
+            device_macaddr &= 0xFF;
+            INFO(   TIME_FMT "| |MAC=0x%04x\r\n",
+                    TIME_FMT_DATA(*time), device_macaddr);
+        }
     }
 
     else
     {
-        device_macaddr = iinic_mac;
-        DEBUG(  TIME_FMT "| |MAC=0x%04x\r\n",
-                TIME_FMT_DATA(*time), device_macaddr);
+        if(!(device_macaddr & 0xFF00))
+        {
+            device_macaddr = iinic_mac;
+            INFO(   TIME_FMT "| |MAC=0x%04x\r\n",
+                    TIME_FMT_DATA(*time), device_macaddr);
+        }
     }
 }
 
@@ -104,7 +110,7 @@ void validate_ping(void)
     {
         ping.mode = P_MODE_HIDDEN;
         device_macaddr = iinic_mac;
-        DEBUG(TIME_FMT "| |PING_TIMEOUT\r\n", (uint16_t) 0, (uint32_t) 0);
+        WARNING(TIME_NULL "| |PING_TIMEOUT\r\n", 0);
     }
 }
 

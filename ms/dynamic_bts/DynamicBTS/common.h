@@ -6,6 +6,7 @@
 // Dla kompatybilności z kodem z AVR
 
 #define __unused__		__attribute__((unused))
+#define SETTINGS_MAX_NODES  18 // sync with ../config.h
 
 #pragma pack(push, 1)
 

@@ -62,7 +62,7 @@ typedef struct assignment
 {
     uint8_t     ttl;
     uint8_t     priority;
-    uint32_t    slotmask;
+    uint16_t    slotmask;
 } Assignment;
 
 typedef struct request
@@ -74,7 +74,7 @@ typedef struct request
 
 struct RequestData
 {
-    uint16_t    blocks_left;
+    uint16_t    bytes_left;
     uint8_t     destination;
     Assignment  assignment[SETTINGS_MAX_NODES];
     uint8_t     queue_counter;
@@ -159,15 +159,15 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
 
 void put_request_message(void)
 {
-    MessageRequest *msg =
-        (MessageRequest *) control_txbuffer_get(sizeof(MessageRequest));
-
+    uint8_t size = sizeof(MessageRequest);
+    MessageRequest *msg = (MessageRequest *) control_txbuffer_get(size);
     if(!msg)
         return;
 
-    if(!request.blocks_left)
+    if(request.bytes_left < 8)
     {
-        request.blocks_left = random();
+        request.bytes_left = 9 + random();
+        request.bytes_left -= request.bytes_left % 8;
         uint8_t r = random() % neighbours_count();
         for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
         {
@@ -188,11 +188,11 @@ void put_request_message(void)
     msg->macaddr        = device_macaddr;
     msg->dst_macaddr    = neighbours.node[request.destination].macaddr;
     msg->ttl            = SETTINGS_MAX_HOP;
-    message_request_set_count(msg, request.blocks_left);
-    control_txbuffer_commit(sizeof(MessageRequest));
+    message_request_set_count(msg, (request.bytes_left + 7) / 8);
+    control_txbuffer_commit(size);
 
-    DEBUG(  TIME_FMT "|R|-REQ(-1,0x%04x,0x%04x,%u,%u)\r\n",
-            (uint16_t) 0, (uint32_t) 0, msg->macaddr, msg->dst_macaddr,
+    DEBUG(  TIME_NULL "|R|-REQ(0x%04x,0x%04x,%u,%u)\r\n",
+            msg->macaddr, msg->dst_macaddr,
             msg->ttl, message_request_get_count(msg));
 }
 
