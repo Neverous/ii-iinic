@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "neighbours.h"
+#include "ping.h"
 
 //
 // MessageData
@@ -66,6 +67,10 @@ void handle_data(   Time_cptr time,
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
             msg->size);
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(msg->macaddr, message_data_get_size(msg));
+    });
+
     if(msg->dst_macaddr != device_macaddr)
         return;
 
@@ -73,7 +78,7 @@ void handle_data(   Time_cptr time,
     if(n == SETTINGS_MAX_NODES)
         return;
 
-    ++ data.stats.in[n];
+    data.stats.in[n] += msg->size;
 }
 
 void put_data_message(uint8_t destination, uint8_t blocks)
@@ -91,7 +96,7 @@ void put_data_message(uint8_t destination, uint8_t blocks)
         msg->data[d] = 0x55;
 
     data_txbuffer_commit(size);
-    ++ data.stats.out[destination];
+    data.stats.out[destination] += msg->size;
     DEBUG(  TIME_NULL "|R|-DATA(0x%04x,0x%04x,%u)\r\n",
             msg->macaddr, msg->dst_macaddr, msg->size);
 }

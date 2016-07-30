@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "data.h"
+#include "ping.h"
 
 //
 // MessageGather
@@ -52,18 +53,20 @@ void handle_gather( Time_cptr time,
     DEBUG(  TIME_FMT "|R|+GAT(%u,%u, 0x%04x)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->ttl, msg->macaddr[0]);
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   msg->macaddr[0],
+                                        message_gather_get_size(msg));
+    });
+
     if(msg->macaddr[0] == device_macaddr)
         return;
 
     uint8_t size = message_gather_get_size(msg);
-#ifdef __USART_COMPLEX__
-    if(ping.mode & P_MODE_MONITOR)
-    {
+    _MODE_MONITOR({
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-GAT(%u, 0x%04x)\r\n",
                 TIME_FMT_DATA(*time), msg->ttl, msg->macaddr[0]);
-    }
-#endif // __USART_COMPLEX__
+    });
 
 #ifndef STATIC_ROOT
     if(synchronization.root.macaddr != device_macaddr)
@@ -104,14 +107,11 @@ void put_gather_message(void)
     memcpy(msg->out, data.stats.out, SETTINGS_MAX_NODES * sizeof(uint16_t));
 
     control_txbuffer_commit(size);
-#ifdef __USART_COMPLEX__
-    if(ping.mode & P_MODE_MONITOR)
-    {
+    _MODE_MONITOR({
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_NULL "|U|-GAT(%u,0x%04x)\r\n",
                 msg->ttl, msg->macaddr[0]);
-    }
-#endif // __USART_COMPLEX__
+    });
 
     DEBUG(  TIME_NULL "|R|-GAT(%u,0x%04x)\r\n",
             msg->ttl, msg->macaddr[0]);

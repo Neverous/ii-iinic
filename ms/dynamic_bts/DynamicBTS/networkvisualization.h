@@ -22,11 +22,13 @@ public:
 private:
     int								timer_id;
     QMap<quint16, NetworkNode *>	nodes;
+    quint16                         root_mac_address;
 
 public:
     NetworkVisualization();
     void clear();
 
+    void update_root(quint16 mac_address);
     void update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
     void item_moved();
 

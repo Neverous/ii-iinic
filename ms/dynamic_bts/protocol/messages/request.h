@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "common.h"
+#include "ping.h"
 #include "synchronization.h"
 
 //
@@ -58,31 +59,7 @@ void message_request_set_count(MessageRequest *msg, uint16_t count)
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct assignment
-{
-    uint8_t     ttl;
-    uint8_t     priority;
-    uint16_t    slotmask;
-} Assignment;
-
-typedef struct request
-{
-    uint8_t source;
-    uint8_t destination;
-    uint16_t size;
-} Request;
-
-struct RequestData
-{
-    uint16_t    bytes_left;
-    uint8_t     destination;
-    Assignment  assignment[SETTINGS_MAX_NODES];
-    uint8_t     queue_counter;
-    uint8_t     queue_size;
-    Request     queue[SETTINGS_REQUEST_QUEUE_SIZE];
-};
-
-extern struct RequestData request;
+#include "request_structs.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +83,11 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
     DEBUG(  TIME_FMT "|R|+REQ(%u,0x%04x,0x%04x,%u,%u)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
             msg->ttl, message_request_get_count(msg));
+
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   msg->macaddr,
+                                        message_request_get_size(msg));
+    });
 
     if(msg->macaddr == device_macaddr)
         return;

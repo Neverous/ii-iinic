@@ -43,6 +43,9 @@ private slots:
     void on_action_open_triggered();
     void on_action_close_triggered();
     void on_debug_line_read(const QString &debug_line);
+    void on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16>> &assignments);
+    void on_node_speak(quint16 mac_address, quint8 bytes);
+    void on_root_change(quint16 root_mac_address);
     void on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
     void on_error(const QString &error);
     void on_info(const QString &info);

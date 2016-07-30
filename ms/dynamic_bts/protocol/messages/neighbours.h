@@ -4,6 +4,8 @@
 #include <string.h>
 
 #include "common.h"
+#include "debug.h"
+#include "neighbours_structs.h"
 #include "ping.h"
 #include "synchronization.h"
 
@@ -52,33 +54,6 @@ uint8_t message_neighbours_get_size(MessageNeighbours_cptr msg)
 #ifdef __AVR__
 ////////////////////////////////////////////////////////////////////////////////
 
-typedef struct node
-{
-    uint16_t    macaddr;
-    uint8_t     color;
-    uint8_t     ttl;
-} Node;
-
-typedef struct edge
-{
-    uint8_t rssi;
-    uint8_t ttl;
-    uint8_t source      : 4;
-    uint8_t destination : 4;
-} Edge;
-
-struct NeighboursData
-{
-    uint16_t    is_neighbour;
-    Node        node[SETTINGS_MAX_NODES];
-    Edge        edge[SETTINGS_MAX_EDGES];
-};
-
-extern struct NeighboursData neighbours;
-
-
-////////////////////////////////////////////////////////////////////////////////
-
 void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
                         const uint8_t rssi);
 void put_neighbours_message(void);
@@ -101,20 +76,22 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
     DEBUG(  TIME_FMT "|R|+NS(%u,0x%04x,%u,%u)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->ttl, msg->count);
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   msg->macaddr,
+                                        message_neighbours_get_size(msg));
+    });
+
     if(msg->macaddr == device_macaddr)
         return;
 
     update_neighbour(time, msg->macaddr, rssi);
     uint8_t size = message_neighbours_get_size(msg);
-#ifdef __USART_COMPLEX__
-    if(ping.mode & P_MODE_MONITOR)
-    {
+    _MODE_MONITOR({
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_FMT "|U|-NS(0x%04x,%u,%u)\r\n",
                 TIME_FMT_DATA(*time), msg->macaddr, msg->ttl,
                 msg->count);
-    }
-#endif // __USART_COMPLEX__
+    });
 
     uint8_t src = update_node(msg->macaddr);
     if(src != SETTINGS_MAX_NODES)
@@ -187,15 +164,12 @@ void put_neighbours_message(void)
     }
 
     control_txbuffer_commit(size);
-#ifdef __USART_COMPLEX__
-    if(ping.mode & P_MODE_MONITOR)
-    {
+    _MODE_MONITOR({
         usart_push_block((uint8_t *) msg, size + 2, true); // +2 dla CRC
         DEBUG(  TIME_NULL "|U|-NS(0x%04x,%u,%u)\r\n",
                 msg->macaddr, msg->ttl,
                 msg->count);
-    }
-#endif // __USART_COMPLEX__
+    });
 
     DEBUG(  TIME_NULL "|R|-NS(0x%04x,%u,%u)\r\n",
             msg->macaddr, msg->ttl,

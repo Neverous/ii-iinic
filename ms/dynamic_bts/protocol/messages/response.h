@@ -60,6 +60,11 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->ttl,
             msg->assignment_ttl, msg->slotmask);
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   msg->macaddr,
+                                        message_response_get_size(msg));
+    });
+
     uint8_t n = update_node(msg->macaddr);
     if(n == SETTINGS_MAX_NODES)
     {

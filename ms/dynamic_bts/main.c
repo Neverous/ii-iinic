@@ -14,7 +14,9 @@ uint8_t     timer;
 struct DataData             data;
 struct NeighbourhoodData    neighbourhood;
 struct NeighboursData       neighbours;
+#ifdef __USART_COMPLEX__
 struct PingData             ping;
+#endif
 struct RequestData          request;
 struct SynchronizationData  synchronization;
 #ifdef __USART_COMPLEX__
@@ -36,8 +38,10 @@ void iinic_main(void)
     neighbours.is_neighbour     = 0;
     neighbours.node[0].macaddr  = iinic_mac;
 
+#ifdef __USART_COMPLEX__
     ping.mode   = P_MODE_HIDDEN;
     ping.ttl    = 0;
+#endif
 
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {

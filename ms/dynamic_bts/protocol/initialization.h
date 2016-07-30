@@ -50,7 +50,9 @@ void initialization_loop(void)
 
         validate_neighbours();
         validate_neighbourhood();
+#ifdef __USART_COMPLEX__
         validate_ping();
+#endif
         validate_synchronization();
     }
 }

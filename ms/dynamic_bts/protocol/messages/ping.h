@@ -51,7 +51,7 @@ uint8_t message_ping_get_size(__unused__ MessagePing_cptr msg)
 }
 
 
-#ifdef __AVR__
+#if defined(__AVR__) && defined(__USART_COMPLEX__)
 ////////////////////////////////////////////////////////////////////////////////
 
 struct PingData
@@ -61,6 +61,8 @@ struct PingData
 };
 
 extern struct PingData ping;
+
+#define _MODE_MONITOR(block) if(ping.mode & P_MODE_MONITOR) block
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -114,5 +116,7 @@ void validate_ping(void)
     }
 }
 
-#endif // __AVR__
+#elif defined(__AVR__) // __AVR__ && __USART_COMPLEX__
+#define _MODE_MONITOR(block) {}
+#endif // __AVR__ && !__USART_COMPLEX__
 #endif // __PROTOCOL_MESSAGES_PING_H__

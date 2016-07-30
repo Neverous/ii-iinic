@@ -63,6 +63,13 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
         this,
         SLOT(on_neighbours_read(quint16,QList<std::tuple<quint16,quint8,quint8> >))
     );
+
+    connect(
+        connector,
+        SIGNAL(read_root_change(quint16)),
+        this,
+        SLOT(on_root_change(quint16))
+    );
 }
 
 GUI::~GUI()
@@ -167,6 +174,21 @@ void GUI::on_action_close_triggered()
 void GUI::on_debug_line_read(const QString &debug_line)
 {
     ui->debug_box->append(debug_line);
+}
+
+void GUI::on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16> > &assignments)
+{
+    // TODO
+}
+
+void GUI::on_node_speak(quint16 mac_address, quint8 bytes)
+{
+    // TODO
+}
+
+void GUI::on_root_change(quint16 root_mac_address)
+{
+    visualization->update_root(root_mac_address);
 }
 
 void GUI::on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours)

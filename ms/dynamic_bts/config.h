@@ -26,6 +26,9 @@ enum Settings
     SETTINGS_CONTROL_FRAME_TIME         = 131072LU,
     SETTINGS_DATA_FRAME_TIME            = 655360LU,
 
+    // DEBUG
+    SETTINGS_DEBUG_ASSIGNMENT_PERIOD    = 32,
+
     // GATHER
     SETTINGS_GATHER_PERIOD              = 192,
 

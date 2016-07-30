@@ -17,6 +17,8 @@ private:
     quint16					mac_address;
     quint8					flags;
     QPointF					new_position;
+    QPen                    backup_pen;
+    bool                    is_root;
 
 public:
     NetworkNode(quint16 _mac_address, quint8 _flags=0);
@@ -27,12 +29,15 @@ public:
 
     void calculate_forces();
     bool move();
+    void setRoot(bool value=true);
 
 protected:
     void add_edge(NetworkEdge *edge);
     void remove_edge(NetworkEdge *edge);
 
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) Q_DECL_OVERRIDE;
+    void focusInEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
+    void focusOutEvent(QFocusEvent *event) Q_DECL_OVERRIDE;
     QVariant itemChange(GraphicsItemChange change, const QVariant &value) Q_DECL_OVERRIDE;
 };
 

@@ -13,8 +13,11 @@ NetworkNode::NetworkNode(quint16 _mac_address, quint8 _flags)
     ,mac_address{_mac_address}
     ,flags{_flags}
     ,new_position{}
+    ,backup_pen{}
+    ,is_root{false}
 {
     setFlag(ItemIsMovable);
+    setFlag(ItemIsFocusable);
     setFlag(ItemSendsGeometryChanges);
     setCacheMode(DeviceCoordinateCache);
     setZValue(-1);
@@ -116,6 +119,12 @@ bool NetworkNode::move()
     return true;
 }
 
+void NetworkNode::setRoot(bool value)
+{
+    is_root = value;
+    update();
+}
+
 void NetworkNode::add_edge(NetworkEdge *edge)
 {
     edges.append(edge);
@@ -129,7 +138,23 @@ void NetworkNode::remove_edge(NetworkEdge *edge)
 void NetworkNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QGraphicsEllipseItem::paint(painter, option, widget);
+    if(is_root)
+        painter->setPen(QPen("red"));
+
     painter->drawText(boundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(mac_address, 16));
+}
+
+void NetworkNode::focusInEvent(QFocusEvent *event)
+{
+    backup_pen = pen();
+    setPen(QPen("grey"));
+    QGraphicsEllipseItem::focusInEvent(event);
+}
+
+void NetworkNode::focusOutEvent(QFocusEvent *event)
+{
+    setPen(backup_pen);
+    QGraphicsEllipseItem::focusOutEvent(event);
 }
 
 QVariant NetworkNode::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)

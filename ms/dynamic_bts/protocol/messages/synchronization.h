@@ -4,6 +4,7 @@
 #include <limits.h>
 
 #include "common.h"
+#include "ping.h"
 
 //
 // MessageSynchronization
@@ -124,6 +125,11 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
 #endif
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   msg->macaddr,
+                                        message_synchronization_get_size(msg));
+    });
+
     update_neighbour(time, msg->macaddr, rssi);
     update_synchronization_point(
 #ifndef STATIC_ROOT
@@ -232,6 +238,10 @@ void update_synchronization_point(
             &&  (int8_t) (seq_id - synchronization.clock.prev_seq_id) <= 0)
             return;
 
+        _MODE_MONITOR({
+            put_debug_root_change_message(root_macaddr);
+        });
+
         INFO(   TIME_FMT "| |ROOT=0x%04x\r\n",
                 TIME_FMT_DATA(*local_time), root_macaddr);
 
@@ -283,6 +293,10 @@ void validate_synchronization(void)
 
     else if(synchronization.root.macaddr != device_macaddr)
     {
+        _MODE_MONITOR({
+            put_debug_root_change_message(device_macaddr);
+        });
+
         INFO(TIME_NULL "| |ROOT=0x%04x\r\n", device_macaddr);
         synchronization.root.prev_macaddr   = synchronization.root.macaddr;
         synchronization.clock.prev_seq_id   = synchronization.clock.seq_id;

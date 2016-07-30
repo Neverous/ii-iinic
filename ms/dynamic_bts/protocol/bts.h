@@ -36,7 +36,9 @@ void bts_loop(void)
 
         validate_neighbourhood();
         validate_neighbours();
+#ifdef __USART_COMPLEX__
         validate_ping();
+#endif
         validate_request();
         validate_synchronization();
         ++ timer;
@@ -139,6 +141,11 @@ bool control_speak_until(Time_cptr deadline)
     if(control_txbuffer_ptr == control_txbuffer)
         return true;
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(
+            device_macaddr, control_txbuffer_ptr - control_txbuffer);
+    });
+
     iinic_idle();
     iinic_set_buffer(control_txbuffer, control_txbuffer_ptr - control_txbuffer);
     iinic_tx();
@@ -195,6 +202,13 @@ void control_step(Time_cptr deadline)
     {
         put_gather_message();
     }
+
+    _MODE_MONITOR({
+        if(!(timer % SETTINGS_DEBUG_ASSIGNMENT_PERIOD))
+        {
+            put_debug_assignment_message();
+        }
+    });
 
     control_listen_until(&random_slot);
 
@@ -292,6 +306,11 @@ bool data_speak_until(Time_cptr deadline)
     put_data_message(request.destination, size);
     request.bytes_left -= size * 8;
 
+    _MODE_MONITOR({
+        put_debug_node_speak_message(   device_macaddr,
+                                        data_txbuffer_ptr - data_txbuffer);
+    });
+
     iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
     iinic_tx();
 
@@ -328,6 +347,7 @@ void data_step_client(Time_cptr deadline)
 
     for(uint8_t i = 0, j = 1; i < 16; i = j, ++ j)
     {
+        DEBUG(TIME_NULL "|?|%u\r\n", i);
         if(assignment->slotmask & _BV(i))
         {
             time_add_i32(   &deadline_part,

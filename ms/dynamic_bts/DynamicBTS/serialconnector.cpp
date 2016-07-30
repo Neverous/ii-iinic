@@ -1,5 +1,6 @@
 #include <QByteArray>
 #include <QtSerialPort/QSerialPortInfo>
+#include <QVector>
 
 #include "serialconnector.h"
 #include "../protocol/messages.h"
@@ -94,17 +95,17 @@ bool SerialConnector::write_message_data(quint16 mac_address, quint16 destinatio
     return port->write((const char *) buffer, size + 2) == size + 2;
 }
 
-bool SerialConnector::write_message_debug(const char *debug, quint8 len)
+bool SerialConnector::write_message_debug_text(const char *debug, quint8 len)
 {
     Q_ASSERT(len <= 31);
 
     uint8_t buffer[64] = {};
-    MessageDebug *msg = (MessageDebug *) buffer;
+    MessageDebugText *msg = (MessageDebugText *) buffer;
     msg->kind		= KIND_DEBUG;
-    msg->kind_high	= 0x4;
+    msg->subkind	= SUBKIND_DEBUG_TEXT;
     memcpy(msg->text, debug, len);
 
-    uint8_t size = message_debug_get_size(msg);
+    uint8_t size = message_debug_text_get_size(msg);
     *(uint16_t *) (buffer + size) = crc16(buffer, size);
     return port->write((const char *) buffer, size + 2) == size + 2;
 
@@ -216,7 +217,49 @@ void SerialConnector::timerEvent(QTimerEvent *)
 
 void SerialConnector::handle_debug(const message_debug * const debug)
 {
-    debug_buffer.append((const char *) debug->text, qstrnlen((const char *) debug->text, 31));
+    switch(debug->subkind)
+    {
+    case SUBKIND_DEBUG_ASSIGNMENT:
+        handle_debug_assignment((MessageDebugAssignment_cptr) debug);
+        return;
+
+    case SUBKIND_DEBUG_NODE_SPEAK:
+        handle_debug_node_speak((MessageDebugNodeSpeak_cptr) debug);
+        return;
+
+    case SUBKIND_DEBUG_ROOT_CHANGE:
+        handle_debug_root_change((MessageDebugRootChange_cptr) debug);
+        return;
+
+    case SUBKIND_DEBUG_TEXT:
+        handle_debug_text((MessageDebugText_cptr) debug);
+        return;
+    }
+}
+
+void SerialConnector::handle_debug_assignment(const message_debug_assignment * const debug_assignment)
+{
+    QList<std::tuple<quint16, quint8, quint8, quint16>> assignments;
+    for(int n = 0; n < SETTINGS_MAX_NODES; ++ n)
+        if(debug_assignment->macaddr[n])
+            assignments.append({debug_assignment->macaddr[n], debug_assignment->assignment[n].priority, debug_assignment->assignment[n].ttl, debug_assignment->assignment[n].slotmask});
+
+    emit read_assignments(assignments);
+}
+
+void SerialConnector::handle_debug_node_speak(const message_debug_node_speak * const debug_node_speak)
+{
+    emit read_node_speak(debug_node_speak->macaddr, debug_node_speak->bytes);
+}
+
+void SerialConnector::handle_debug_root_change(const message_debug_root_change * const debug_root_change)
+{
+    emit read_root_change(debug_root_change->root_macaddr);
+}
+
+void SerialConnector::handle_debug_text(const message_debug_text * const debug_text)
+{
+    debug_buffer.append((const char *) debug_text->text, qstrnlen((const char *) debug_text->text, 31));
     int pos = 0;
 
     while((pos = debug_buffer.indexOf("\r\n")) != -1)
@@ -224,6 +267,16 @@ void SerialConnector::handle_debug(const message_debug * const debug)
         emit read_debug_line(debug_buffer.left(pos));
         debug_buffer.remove(0, pos + 2);
     }
+}
+
+void SerialConnector::handle_gather(const message_gather * const gather)
+{
+    QList<std::tuple<quint16, quint16, quint16>> stats;
+    for(int n = 0; n < SETTINGS_MAX_NODES; ++ n)
+        if(gather->macaddr[n])
+            stats.append({gather->macaddr[n], gather->in[n], gather->out[n]});
+
+    emit read_gather(stats);
 }
 
 void SerialConnector::handle_neighbours(const message_neighbours * const neighbours)
@@ -256,6 +309,10 @@ void SerialConnector::on_serial_port_read()
 
         case KIND_NEIGHBOURS:
             handle_neighbours((MessageNeighbours_cptr) msg);
+            break;
+
+        case KIND_GATHER:
+            handle_gather((MessageGather_cptr) msg);
             break;
 
         case KIND_INVALID:

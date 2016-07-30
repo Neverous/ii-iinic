@@ -4,6 +4,7 @@ NetworkVisualization::NetworkVisualization()
     :QGraphicsScene{}
     ,timer_id{}
     ,nodes{}
+    ,root_mac_address{}
 {
     item_moved();
 }
@@ -12,6 +13,19 @@ void NetworkVisualization::clear()
 {
     QGraphicsScene::clear();
     nodes.clear();
+}
+
+void NetworkVisualization::update_root(quint16 mac_address)
+{
+    if(nodes.count(root_mac_address))
+        nodes[root_mac_address]->setRoot(false);
+
+    root_mac_address = mac_address;
+    NetworkNode *&node = nodes[root_mac_address];
+    if(!node)
+        addItem(node = new NetworkNode{root_mac_address});
+
+    node->setRoot();
 }
 
 void NetworkVisualization::update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours)

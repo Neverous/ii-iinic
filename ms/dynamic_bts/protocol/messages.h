@@ -1,6 +1,10 @@
 #ifndef __PROTOCOL_MESSAGES_H__
 #define __PROTOCOL_MESSAGES_H__
 
+#if __BYTE_ORDER__ != __ORDER_LITTLE_ENDIAN__
+#error "This code supports only little endian machines!"
+#endif
+
 #include "common.h"
 
 #ifndef __AVR__
@@ -38,11 +42,32 @@ uint8_t message_get_size(Message_cptr msg)
     {
 #define CASE_KIND(NAME, Name, name) \
     case KIND_ ## NAME:             \
-        return message_## name ## _get_size((Message ## Name ## _cptr) msg)
+        return message_ ## name ## _get_size((Message ## Name ## _cptr) msg)
+
+#define CASE_SUBKIND(NAME, Name, name)  \
+    case SUBKIND_ ## NAME:              \
+        return message_ ## name ## _get_size((Message ## Name ## _cptr) submsg)
 
         CASE_KIND(DATA,             Data,               data);
 #ifndef __AVR__
-        CASE_KIND(DEBUG,            Debug,              debug);
+    case KIND_DEBUG:
+        {
+            MessageDebug_cptr submsg = (MessageDebug_cptr) msg;
+            switch(submsg->subkind)
+            {
+                CASE_SUBKIND(   DEBUG_ASSIGNMENT, DebugAssignment,
+                                debug_assignment);
+
+                CASE_SUBKIND(   DEBUG_NODE_SPEAK, DebugNodeSpeak,
+                                debug_node_speak);
+
+                CASE_SUBKIND(   DEBUG_ROOT_CHANGE, DebugRootChange,
+                                debug_root_change);
+
+                CASE_SUBKIND(DEBUG_TEXT, DebugText, debug_text);
+            }
+        }
+        break;
 #endif
         CASE_KIND(GATHER,           Gather,             gather);
         CASE_KIND(NEIGHBOURHOOD,    Neighbourhood,      neighbourhood);
