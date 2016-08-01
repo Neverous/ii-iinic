@@ -4,8 +4,8 @@
 #include <QGraphicsScene>
 #include <QMap>
 
-#include "networknode.h"
 #include "networkedge.h"
+#include "networknode.h"
 
 class NetworkVisualization: public QGraphicsScene
 {
@@ -20,13 +20,15 @@ public:
     static constexpr qreal  PUSH_CONSTANT = 50.0;
 
 private:
-    int								timer_id;
-    QMap<quint16, NetworkNode *>	nodes;
+    int                             timer_id;
+    QMap<quint16, NetworkNode *>    nodes;
     quint16                         root_mac_address;
 
 public:
     NetworkVisualization();
     void clear();
+
+    QList<NetworkNode *> get_nodes();
 
     void update_root(quint16 mac_address);
     void update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);

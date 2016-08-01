@@ -4,11 +4,13 @@
 #include "messages.h"
 
 #ifdef __USART_COMPLEX__
+inline
 uint8_t usart_get_packet_size(uint8_t kind)
 {
     return message_get_size((Message_cptr) &kind) + 2;
 }
 
+inline
 void handle_usart_message(Time_cptr time, Message_cptr msg)
 {
     switch(msg->kind)
@@ -19,6 +21,7 @@ void handle_usart_message(Time_cptr time, Message_cptr msg)
     }
 }
 
+inline
 void handle_usart(void)
 {
     Time time; time_get_now(&time);
@@ -50,14 +53,6 @@ void handle_usart(void)
             ++ count;
             usart_pop(peeked);
             continue;
-        }
-
-        else if(size + 2 <= 128)
-        {
-            uint8_t buffer[128];
-            usart_get(buffer, size + 2);
-            handle_usart_message(&time, (Message_cptr) buffer);
-            ++ count;
         }
 
         else

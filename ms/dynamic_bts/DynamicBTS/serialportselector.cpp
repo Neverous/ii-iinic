@@ -3,9 +3,9 @@
 #include <QStandardItemModel>
 #include <QtSerialPort/QSerialPortInfo>
 
+#include "serialconnector.h"
 #include "serialportselector.h"
 #include "ui_serialportselector.h"
-#include "serialconnector.h"
 
 SerialPortSelector::SerialPortSelector(QWidget *parent)
     :QDialog{parent}

@@ -15,6 +15,11 @@ void NetworkVisualization::clear()
     nodes.clear();
 }
 
+QList<NetworkNode *> NetworkVisualization::get_nodes()
+{
+    return nodes.values();
+}
+
 void NetworkVisualization::update_root(quint16 mac_address)
 {
     if(nodes.count(root_mac_address))
@@ -28,7 +33,7 @@ void NetworkVisualization::update_root(quint16 mac_address)
     node->setRoot();
 }
 
-void NetworkVisualization::update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours)
+void NetworkVisualization::update_node(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours)
 {
     NetworkNode *&node = nodes[mac_address];
     if(!node)

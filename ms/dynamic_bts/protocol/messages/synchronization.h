@@ -37,6 +37,7 @@ typedef struct message_synchronization
 
 typedef const MessageSynchronization * const MessageSynchronization_cptr;
 
+inline
 uint8_t message_synchronization_get_size(
     __unused__ MessageSynchronization_cptr msg)
 {
@@ -125,11 +126,6 @@ void handle_synchronization(Time_cptr time, MessageSynchronization_cptr msg,
 #endif
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 
-    _MODE_MONITOR({
-        put_debug_node_speak_message(   msg->macaddr,
-                                        message_synchronization_get_size(msg));
-    });
-
     update_neighbour(time, msg->macaddr, rssi);
     update_synchronization_point(
 #ifndef STATIC_ROOT
@@ -178,12 +174,14 @@ void put_synchronization_message(void)
             msg->seq_id, TIME_FMT_DATA(msg->global_time));
 }
 
+inline
 void time_get_global_now(Time *global_time)
 {
     Time local_time; time_get_now(&local_time);
     time_local_to_global(global_time, &local_time);
 }
 
+inline
 void time_local_to_global(Time *global_time, Time_cptr local_time)
 {
     if(!local_time)
@@ -203,6 +201,7 @@ void time_local_to_global(Time *global_time, Time_cptr local_time)
                     (synchronization.clock.skew * UINT_MAX) * skew_diff.high);
 }
 
+inline
 void time_global_to_local(Time *local_time, Time_cptr global_time)
 {
     if(!global_time)
@@ -222,6 +221,7 @@ void time_global_to_local(Time *local_time, Time_cptr global_time)
                     -(synchronization.clock.skew * UINT_MAX) * skew_diff.high);
 }
 
+inline
 void update_synchronization_point(
 #ifndef STATIC_ROOT
         const uint16_t root_macaddr,
@@ -281,6 +281,7 @@ void update_synchronization_point(
         }
 }
 
+inline
 void validate_synchronization(void)
 {
     for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
@@ -306,6 +307,7 @@ void validate_synchronization(void)
 #endif
 }
 
+inline
 uint8_t _find_leader(uint16_t *leader)
 {
     struct SynchronizationPoint *sync_point = synchronization.sync_point;
@@ -339,6 +341,7 @@ uint8_t _find_leader(uint16_t *leader)
     return count;
 }
 
+inline
 void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
 {
     struct SynchronizationPoint *sync_point = synchronization.sync_point;
@@ -346,7 +349,7 @@ void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
     int64_t     new_offset      = 0;
     uint64_t    new_last_sync   = 0;
 
-    NOTICE(TIME_FMT "| |FAST_SYNC(%u)\r\n", TIME_FMT_DATA(*time), count);
+    INFO(TIME_FMT "| |FAST_SYNC(%u)\r\n", TIME_FMT_DATA(*time), count);
     for(uint8_t s = 0; s < SETTINGS_SYNCHRONIZATION_POINTS; ++ s)
     {
         if(!sync_point[s].ttl || leader != sync_point[s].global_time.high)
@@ -393,7 +396,7 @@ void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
     synchronization.trigger                 = true;
     synchronization.valid                   = true;
 
-    NOTICE( TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+    INFO(   TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
             TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
             synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),
@@ -401,12 +404,13 @@ void recalculate_clock_fast(Time_cptr time, uint16_t leader, uint8_t count)
             TIME_FMT_DATA(synchronization.clock.last_sync));
 }
 
+inline
 void recalculate_clock(Time_cptr time)
 {
     struct SynchronizationPoint *sync_point = synchronization.sync_point;
 
     uint8_t     s;
-    uint16_t    leader;
+    uint16_t    leader = 0;
     uint8_t     count = _find_leader(&leader);
 
     int64_t     new_offset      = 0;
@@ -521,7 +525,7 @@ void recalculate_clock(Time_cptr time)
     synchronization.trigger                 = true;
     synchronization.valid                   = true;
 
-    NOTICE( TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
+    INFO(   TIME_FMT "| |NEW_CLOCK(%d:" TIME_FMT_COMPACT ",%d,"
             TIME_FMT_COMPACT ")\r\n", TIME_FMT_DATA(*time),
             synchronization.clock.add,
             TIME_FMT_DATA(synchronization.clock.offset),

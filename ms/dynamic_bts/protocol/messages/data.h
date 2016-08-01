@@ -67,10 +67,6 @@ void handle_data(   Time_cptr time,
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
             msg->size);
 
-    _MODE_MONITOR({
-        put_debug_node_speak_message(msg->macaddr, message_data_get_size(msg));
-    });
-
     if(msg->dst_macaddr != device_macaddr)
         return;
 

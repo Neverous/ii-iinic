@@ -2,6 +2,7 @@
 #define GUI_H
 
 #include <QMainWindow>
+#include <QMap>
 
 class NetworkVisualization;
 class QErrorMessage;
@@ -19,13 +20,13 @@ class GUI: public QMainWindow
     Q_OBJECT
 
 private:
-    Ui::GUI					*ui;
-    NetworkVisualization	*visualization;
-    SerialConnector			*connector;
-    SerialPortSelector		*selector;
-    QErrorMessage			*error;
-    QLabel					*mode_box;
-    QWidget					*status_box;
+    Ui::GUI                 *ui;
+    NetworkVisualization    *visualization;
+    SerialConnector         *connector;
+    SerialPortSelector      *selector;
+    QErrorMessage           *error;
+    QLabel                  *mode_box;
+    QWidget                 *status_box;
 
 public:
     explicit GUI(SerialConnector *_connector, QWidget *parent=nullptr);
@@ -43,8 +44,8 @@ private slots:
     void on_action_open_triggered();
     void on_action_close_triggered();
     void on_debug_line_read(const QString &debug_line);
-    void on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16>> &assignments);
-    void on_node_speak(quint16 mac_address, quint8 bytes);
+    void on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16>> &_assignments);
+    void on_gather(quint16 source_mac_address, quint16 latency, const QList<std::tuple<quint16, quint16, quint16> > &stats);
     void on_root_change(quint16 root_mac_address);
     void on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
     void on_error(const QString &error);
@@ -55,6 +56,10 @@ private slots:
     void on_mode_hidden_toggled(bool value);
     void on_tab_box_currentChanged(int);
     void on_action_about_triggered();
+    void on_action_export_log_triggered();
+    void on_action_export_data_stats_triggered();
+    void on_action_export_latency_stats_triggered();
+    void on_action_export_graph_triggered();
 };
 
 #endif // GUI_H

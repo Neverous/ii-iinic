@@ -13,10 +13,10 @@ class NetworkNode: public QGraphicsEllipseItem
     friend class NetworkVisualization;
 
 private:
-    QList<NetworkEdge *>	edges;
-    quint16					mac_address;
-    quint8					flags;
-    QPointF					new_position;
+    QList<NetworkEdge *>    edges;
+    quint16                 mac_address;
+    quint8                  flags;
+    QPointF                 new_position;
     QPen                    backup_pen;
     bool                    is_root;
 

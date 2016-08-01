@@ -2,6 +2,7 @@
 #define __PROTOCOL_BTS_H__
 
 #include <avr/pgmspace.h>
+
 #include "blinker.h"
 #include "messages.h"
 #include "usart.h"
@@ -9,6 +10,7 @@
 void control_step(Time_cptr deadline);
 void data_step(Time_cptr deadline);
 
+inline
 static
 void bts_loop(void)
 {
@@ -17,7 +19,7 @@ void bts_loop(void)
     iinic_rx();
 
     Time now; time_get_now(&now);
-    NOTICE("\r\n" TIME_FMT "|M|BTS\r\n", TIME_FMT_DATA(now));
+    INFO("\r\n" TIME_FMT "|M|BTS\r\n", TIME_FMT_DATA(now));
 
     while(true)
     {
@@ -45,6 +47,7 @@ void bts_loop(void)
     }
 }
 
+inline
 void control_handle_messages(
     Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end)
@@ -104,8 +107,7 @@ void control_handle_messages(
 void control_listen_until(Time_cptr deadline)
 {
     uint8_t signal;
-    while((signal = timed_poll( IINIC_RX_COMPLETE | IINIC_SIGNAL,
-                                deadline)))
+    while((signal = timed_poll(IINIC_RX_COMPLETE | IINIC_SIGNAL, deadline)))
     {
         if(signal & IINIC_RX_COMPLETE)
         {
@@ -124,6 +126,7 @@ void control_listen_until(Time_cptr deadline)
     }
 }
 
+inline
 bool control_speak_until(Time_cptr deadline)
 {
     if( (   synchronization.valid ||
@@ -133,18 +136,14 @@ bool control_speak_until(Time_cptr deadline)
             STATIC_ROOT == device_macaddr) &&
 #endif
         (   synchronization.trigger ||
-            !(timer % SETTINGS_SYNCHRONIZATION_PERIOD)))
+            !((timer + (uint16_t) &synchronization) %
+                SETTINGS_SYNCHRONIZATION_PERIOD)))
     {
         put_synchronization_message();
     }
 
     if(control_txbuffer_ptr == control_txbuffer)
         return true;
-
-    _MODE_MONITOR({
-        put_debug_node_speak_message(
-            device_macaddr, control_txbuffer_ptr - control_txbuffer);
-    });
 
     iinic_idle();
     iinic_set_buffer(control_txbuffer, control_txbuffer_ptr - control_txbuffer);
@@ -170,6 +169,7 @@ bool control_speak_until(Time_cptr deadline)
     return time_left;
 }
 
+inline
 void control_step(Time_cptr deadline)
 {
     Time random_slot = *deadline;
@@ -182,7 +182,7 @@ void control_step(Time_cptr deadline)
         put_neighbourhood_message();
     }
 
-    if(!(timer % SETTINGS_NEIGHBOURS_PERIOD))
+    if(!((timer + (uint16_t) &neighbours) % SETTINGS_NEIGHBOURS_PERIOD))
     {
         put_neighbours_message();
     }
@@ -193,21 +193,18 @@ void control_step(Time_cptr deadline)
     if(STATIC_ROOT != device_macaddr &&
 #endif
         !request.assignment[0].ttl &&
-        !(random() % SETTINGS_REQUEST_PROBABILITY))
+        request.bytes_left > 8)
     {
         put_request_message();
     }
 
-    if(!(timer % SETTINGS_GATHER_PERIOD))
+    if(!((timer + (uint16_t) &request) % SETTINGS_GATHER_PERIOD))
     {
         put_gather_message();
     }
 
     _MODE_MONITOR({
-        if(!(timer % SETTINGS_DEBUG_ASSIGNMENT_PERIOD))
-        {
-            put_debug_assignment_message();
-        }
+        put_debug_assignment_message();
     });
 
     control_listen_until(&random_slot);
@@ -217,6 +214,7 @@ void control_step(Time_cptr deadline)
         control_listen_until(deadline);
 }
 
+inline
 void data_handle_messages(
     Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end)
@@ -273,8 +271,7 @@ void data_listen_once(void)
 void data_listen_until(Time_cptr deadline)
 {
     uint8_t signal;
-    while((signal = timed_poll( IINIC_RX_COMPLETE | IINIC_SIGNAL,
-                                deadline)))
+    while((signal = timed_poll(IINIC_RX_COMPLETE | IINIC_SIGNAL, deadline)))
     {
         if(signal & IINIC_RX_COMPLETE)
         {
@@ -293,6 +290,7 @@ void data_listen_until(Time_cptr deadline)
     }
 }
 
+inline
 bool data_speak_until(Time_cptr deadline)
 {
     if(!request.bytes_left)
@@ -305,11 +303,6 @@ bool data_speak_until(Time_cptr deadline)
     data_txbuffer_ptr = data_txbuffer;
     put_data_message(request.destination, size);
     request.bytes_left -= size * 8;
-
-    _MODE_MONITOR({
-        put_debug_node_speak_message(   device_macaddr,
-                                        data_txbuffer_ptr - data_txbuffer);
-    });
 
     iinic_set_buffer(data_txbuffer, data_txbuffer_ptr - data_txbuffer);
     iinic_tx();
@@ -333,6 +326,7 @@ bool data_speak_until(Time_cptr deadline)
     return time_left;
 }
 
+inline
 void data_step_client(Time_cptr deadline)
 {
     Time deadline_part = *deadline;
@@ -347,7 +341,6 @@ void data_step_client(Time_cptr deadline)
 
     for(uint8_t i = 0, j = 1; i < 16; i = j, ++ j)
     {
-        DEBUG(TIME_NULL "|?|%u\r\n", i);
         if(assignment->slotmask & _BV(i))
         {
             time_add_i32(   &deadline_part,
@@ -370,6 +363,7 @@ void data_step_client(Time_cptr deadline)
     }
 }
 
+inline
 void _gather_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
 {
     const Edge *edge = neighbours.edge;
@@ -378,11 +372,12 @@ void _gather_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
         if(!edge[e].ttl)
             continue;
 
-        neighbour[edge[e].source] |= _BV(edge[e].destination);
-        neighbour[edge[e].destination] |= _BV(edge[e].source);
+        neighbour[edge[e].source]       |= _BV(edge[e].destination);
+        neighbour[edge[e].destination]  |= _BV(edge[e].source);
     }
 }
 
+inline
 void _color_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
 {
     Node *node = neighbours.node;
@@ -432,6 +427,7 @@ void _color_neighbours(uint16_t neighbour[SETTINGS_MAX_NODES])
     }
 }
 
+inline
 void _sort_requests_by_priority(void)
 {
     Assignment *assignment = request.assignment;
@@ -453,6 +449,7 @@ void _sort_requests_by_priority(void)
     while(!done);
 }
 
+inline
 void _redo_existing_assignments(void)
 {
     Assignment *assignment = request.assignment;
@@ -487,12 +484,9 @@ void _redo_existing_assignments(void)
                         SETTINGS_MAX_HOP * 8),
                     ttl);
 
-        uint16_t possible = (uint16_t) ttl * slots;
-        if(possible > queue[r].size + queue[r].size / 2)
-        {
-            possible = queue[r].size + queue[r].size / 2;
-            ttl = (slots - 1 + possible) / slots;
-        }
+        uint32_t possible = (uint32_t) ttl * slots * 192;
+        if(possible > queue[r].size)
+            ttl = (slots + queue[r].size / 192) / slots;
 
         if(assignment[queue[r].source].priority)
             -- assignment[queue[r].source].priority;
@@ -503,6 +497,7 @@ void _redo_existing_assignments(void)
     }
 }
 
+inline
 void _create_new_assignments(void)
 {
     Assignment *assignment = request.assignment;
@@ -515,7 +510,8 @@ void _create_new_assignments(void)
 
         bool valid = true;
         for(uint8_t r = 0; r < request.queue_size && valid; ++ r)
-            valid = queue[r].source != n;
+            if(!assignment[queue[r].source].ttl)
+                valid = queue[r].source != n;
 
         if(!valid)
             continue;
@@ -528,7 +524,12 @@ void _create_new_assignments(void)
 
     uint32_t size_sum = 0;
     for(uint8_t r = 0; r < request.queue_size; ++ r)
+    {
+        if(assignment[queue[r].source].ttl)
+            continue;
+
         size_sum += queue[r].size;
+    }
 
     uint8_t free_slots = __builtin_popcountll(free_slotmask);
     for(uint8_t r = 0; r < request.queue_size && free_slotmask; ++ r)
@@ -538,7 +539,7 @@ void _create_new_assignments(void)
             continue;
 
         uint8_t slots = max(1,
-                            (uint32_t) free_slots * queue[r].size / size_sum);
+            (uint32_t) free_slots * queue[r].size / size_sum);
 
         uint8_t ttl = min(  max(queue[r].size / 192 / slots,
                                 SETTINGS_MAX_HOP * 8),
@@ -551,7 +552,6 @@ void _create_new_assignments(void)
                 free_slotmask &= ~_BV(b);
                 slotmask |= _BV(b);
                 -- slots;
-                -- free_slots;
             }
 
         if(assignment[n].priority)
@@ -563,10 +563,11 @@ void _create_new_assignments(void)
     }
 }
 
+inline
 void data_step_server(Time_cptr deadline)
 {
     if(request.queue_size < SETTINGS_REQUEST_QUEUE_SIZE &&
-        timer % (SETTINGS_REQUEST_QUEUE_SIZE * 2))
+        (timer + (uint16_t) request.queue) % (SETTINGS_REQUEST_QUEUE_SIZE * 4))
     {
         data_listen_until(deadline);
         return;
@@ -594,6 +595,7 @@ void data_step_server(Time_cptr deadline)
     data_listen_until(deadline);
 }
 
+inline
 void data_step(Time_cptr deadline)
 {
 #ifndef STATIC_ROOT

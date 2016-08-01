@@ -26,6 +26,7 @@ typedef struct message_neighbourhood
 
 typedef const MessageNeighbourhood * const MessageNeighbourhood_cptr;
 
+inline
 uint8_t message_neighbourhood_get_size(__unused__ MessageNeighbourhood_cptr msg)
 {
     return sizeof(MessageNeighbourhood);
@@ -80,6 +81,7 @@ void put_neighbourhood_message(void)
     DEBUG(TIME_FMT "|R|-NHOOD\r\n", TIME_FMT_DATA(local_time));
 }
 
+inline
 void validate_neighbourhood(void)
 {
     if(neighbourhood.ttl)

@@ -1,8 +1,8 @@
 #include <QPainter>
 
-#include "networkvisualization.h"
 #include "networkedge.h"
 #include "networknode.h"
+#include "networkvisualization.h"
 
 NetworkEdge::NetworkEdge(NetworkNode *_source, NetworkNode *_destination, quint16 _rssi, quint8 _ttl)
     :source{_source}

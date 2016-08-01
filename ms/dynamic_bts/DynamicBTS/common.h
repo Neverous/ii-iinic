@@ -5,7 +5,7 @@
 
 // Dla kompatybilności z kodem z AVR
 
-#define __unused__		__attribute__((unused))
+#define __unused__          __attribute__((unused))
 #define SETTINGS_MAX_NODES  16 // sync with ../config.h
 
 #pragma pack(push, 1)
@@ -21,7 +21,6 @@ struct Time
 typedef const Time * const Time_cptr;
 typedef const uint8_t * const uint8_t_cptr;
 
-inline
 uint16_t crc16(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;

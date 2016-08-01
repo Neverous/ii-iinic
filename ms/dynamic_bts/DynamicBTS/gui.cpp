@@ -1,7 +1,9 @@
 #include <QErrorMessage>
+#include <QFileDialog>
 #include <QLabel>
 #include <QMessageBox>
 #include <QStandardItemModel>
+#include <QTextStream>
 
 #include "gui.h"
 #include "networkvisualization.h"
@@ -20,27 +22,16 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
     ,status_box{new QWidget{this}}
 {
     ui->setupUi(this);
-    ui->visualization_box->setScene(visualization);
+    ui->graph_box->setScene(visualization);
 
     ui->status_bar->addPermanentWidget(mode_box);
     change_control_mode(MODE_HIDDEN);
 
-    //status_box->setStyleSheet("background: rgb(255, 0, 0);");
-    //status_box->setMinimumSize(22, 22);
-    //status_box->setMaximumSize(22, 22);
-    //ui->status_bar->addPermanentWidget(status_box);
-
-    //auto node1 = new NetworkNode{0xAAAA};
-    //auto node2 = new NetworkNode{0xBBBB};
-    //visualization->addItem(node1);
-    //visualization->addItem(node2);
-    //visualization->addItem(new NetworkEdge{node1, node2, 400, 255});
-
     connect(
         selector,
-        SIGNAL(serial_port_selected(QString,qint32)),
+        SIGNAL(serial_port_selected(QString, qint32)),
         this,
-        SLOT(on_serial_port_selected(QString,qint32))
+        SLOT(on_serial_port_selected(QString, qint32))
     );
 
     connect(
@@ -59,9 +50,9 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
 
     connect(
         connector,
-        SIGNAL(read_neighbours(quint16,QList<std::tuple<quint16,quint8,quint8> >)),
+        SIGNAL(read_neighbours(quint16, QList<std::tuple<quint16, quint8, quint8>>)),
         this,
-        SLOT(on_neighbours_read(quint16,QList<std::tuple<quint16,quint8,quint8> >))
+        SLOT(on_neighbours_read(quint16, QList<std::tuple<quint16, quint8, quint8>>))
     );
 
     connect(
@@ -69,6 +60,20 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
         SIGNAL(read_root_change(quint16)),
         this,
         SLOT(on_root_change(quint16))
+    );
+
+    connect(
+        connector,
+        SIGNAL(read_assignments(QList<std::tuple<quint16, quint8, quint8, quint16>>)),
+        this,
+        SLOT(on_assignments(QList<std::tuple<quint16, quint8, quint8, quint16>>))
+    );
+
+    connect(
+        connector,
+        SIGNAL(read_gather(quint16, quint16, QList<std::tuple<quint16, quint16, quint16>>)),
+        this,
+        SLOT(on_gather(quint16, quint16, QList<std::tuple<quint16, quint16, quint16>>))
     );
 }
 
@@ -79,7 +84,6 @@ GUI::~GUI()
     delete selector;
     delete visualization;
     delete ui;
-
 }
 
 void GUI::showEvent(QShowEvent *event)
@@ -97,14 +101,14 @@ void GUI::showEvent(QShowEvent *event)
 
 void GUI::change_control_mode(qint32 mode)
 {
-    for(const auto &element: QList<std::tuple<ControlMode, QString, QAction*>>{
-        {MODE_HIDDEN,			"HID",	ui->mode_hidden},
-        {MODE_MONITOR,			"MON",	ui->mode_monitor},
+    for(const auto &element: QList<std::tuple<ControlMode, QString, QAction *>>{
+        {MODE_HIDDEN,   "HID",  ui->mode_hidden},
+        {MODE_MONITOR,  "MON",  ui->mode_monitor},
         })
     {
         ControlMode mode_id;
-        QString		mode_str;
-        QAction*	mode_ptr;
+        QString     mode_str;
+        QAction     *mode_ptr;
         std::tie(mode_id, mode_str, mode_ptr) = element;
 
         if(mode != mode_id)
@@ -134,6 +138,9 @@ void GUI::on_serial_port_selected(const QString &port_name, qint32 baud_rate)
 
     visualization->clear();
     ui->debug_box->clear();
+    ui->data_stats_box->clear();
+    ui->assignments_box->clear();
+    ui->latency_box->clear();
 
     connector->set_port_name(port_name);
     if(!connector->set_baud_rate(baud_rate))
@@ -176,14 +183,15 @@ void GUI::on_debug_line_read(const QString &debug_line)
     ui->debug_box->append(debug_line);
 }
 
-void GUI::on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16> > &assignments)
+void GUI::on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16>> &_assignments)
 {
-    // TODO
+    ui->assignments_box->update_assignments(_assignments);
 }
 
-void GUI::on_node_speak(quint16 mac_address, quint8 bytes)
+void GUI::on_gather(quint16 source_mac_address, quint16 latency, const QList<std::tuple<quint16, quint16, quint16> > &stats)
 {
-    // TODO
+    ui->data_stats_box->update_node(source_mac_address, stats);
+    ui->latency_box->update_node(source_mac_address, latency);
 }
 
 void GUI::on_root_change(quint16 root_mac_address)
@@ -191,7 +199,7 @@ void GUI::on_root_change(quint16 root_mac_address)
     visualization->update_root(root_mac_address);
 }
 
-void GUI::on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours)
+void GUI::on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours)
 {
     visualization->update_node(mac_address, neighbours);
 }
@@ -213,20 +221,23 @@ void GUI::on_success(const QString &success)
 
 void GUI::on_mode_monitor_toggled(bool value)
 {
-    if(!value) return;
+    if(!value)
+        return;
+
     change_control_mode(MODE_MONITOR);
 }
 
 void GUI::on_mode_hidden_toggled(bool value)
 {
-    if(!value) return;
-    change_control_mode(MODE_HIDDEN);
+    if(!value)
+        return;
 
+    change_control_mode(MODE_HIDDEN);
 }
 
 void GUI::on_tab_box_tabBarClicked(int index)
 {
-    if(	index == ui->tab_box->currentIndex() &&
+    if(index == ui->tab_box->currentIndex() &&
             ui->tab_box->maximumHeight() != 26)
         ui->tab_box->setMaximumHeight(26);
 
@@ -241,5 +252,139 @@ void GUI::on_tab_box_currentChanged(int)
 
 void GUI::on_action_about_triggered()
 {
-    QMessageBox::about(this, "About DynamicBTS", "This is simple client for debugging simple_bts devices.");
+    QMessageBox::about(this, QObject::tr("About DynamicBTS"),
+        QObject::tr("This is simple client for debugging simple_bts devices."));
+}
+
+void GUI::on_action_export_log_triggered()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, QObject::tr("Export log"), "debug.log", QObject::tr("Log files (%1)").arg("*.log"));
+    if(file_name.isEmpty())
+        return;
+
+    QFile file{file_name};
+    if(file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        QTextStream output{&file};
+        output << ui->debug_box->document()->toPlainText();
+        file.close();
+    }
+
+    else
+        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
+                                    .arg(file_name)
+                                    .arg(file.errorString()));
+}
+
+void GUI::on_action_export_data_stats_triggered()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, QObject::tr("Export data stats"), "data.csv", QObject::tr("CSV files (%1)").arg("*.csv"));
+    if(file_name.isEmpty())
+        return;
+
+    QFile file{file_name};
+
+    if(file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        QTextStream output{&file};
+        int columns = ui->data_stats_box->columnCount();
+        for(int c = 0; c < columns; ++ c)
+            output << ";\"" << ui->data_stats_box->horizontalHeaderItem(c)->text() << "\"";
+
+        output << "\n";
+
+        int rows = ui->data_stats_box->rowCount();
+        for(int r = 0; r < rows; ++ r)
+        {
+            output << "\"" << ui->data_stats_box->verticalHeaderItem(r)->text() << "\"";
+            for(int c = 0; c < columns; ++ c)
+            {
+                auto item = ui->data_stats_box->item(r, c);
+                output << ";\"" << (item ? item->text() : "") << "\"";
+            }
+
+            output << "\n";
+        }
+
+        file.close();
+    }
+
+    else
+        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
+                                    .arg(file_name)
+                                    .arg(file.errorString()));
+}
+
+void GUI::on_action_export_latency_stats_triggered()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, QObject::tr("Export latency stats"), "latency.csv", QObject::tr("CSV files (%1)").arg("*.csv"));
+    if(file_name.isEmpty())
+        return;
+
+    QFile file{file_name};
+
+    if(file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        QTextStream output{&file};
+        int columns = ui->latency_box->columnCount();
+        for(int c = 0; c < columns; ++ c)
+            output << ";\"" << ui->latency_box->horizontalHeaderItem(c)->text() << "\"";
+
+        output << "\n";
+
+        int rows = ui->latency_box->rowCount();
+        for(int r = 0; r < rows; ++ r)
+        {
+            auto head = ui->latency_box->verticalHeaderItem(r);
+            output << "\"" << (head ? head->text() : "") << "\"";
+            for(int c = 0; c < columns; ++ c)
+            {
+                auto item = ui->latency_box->item(r, c);
+                output << ";\"" << (item ? item->text() : "") << "\"";
+            }
+            output << "\n";
+        }
+
+        file.close();
+    }
+
+    else
+        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
+                                    .arg(file_name)
+                                    .arg(file.errorString()));
+}
+
+void GUI::on_action_export_graph_triggered()
+{
+    QString file_name = QFileDialog::getSaveFileName(this, QObject::tr("Export network graph"), "network.dot", QObject::tr("GraphViz files (%1)").arg("*.dot"));
+    if(file_name.isEmpty())
+        return;
+
+    QFile file{file_name};
+
+    if(file.open(QFile::WriteOnly | QFile::Truncate))
+    {
+        QTextStream output{&file};
+        output << "graph Network {\n";
+        QSet<NetworkEdge *> edges;
+        for(auto &node: visualization->get_nodes())
+        {
+            output << "    " << QString::number(node->get_mac_address(), 16) << ";\n";
+            for(auto &edge: node->get_edges())
+                edges << edge;
+        }
+
+        for(auto &edge: edges)
+            output << "    " << QString::number(edge->get_source()->get_mac_address(), 16)
+                   << " -- " << QString::number(edge->get_destination()->get_mac_address(), 16)
+                   << " [label=\"" << QString::number(edge->get_rssi()) << "\"];\n";
+
+        output << "}\n";
+        file.close();
+    }
+
+    else
+        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
+                                    .arg(file_name)
+                                    .arg(file.errorString()));
 }

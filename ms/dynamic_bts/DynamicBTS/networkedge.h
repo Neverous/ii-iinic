@@ -15,8 +15,8 @@ class NetworkEdge: public QGraphicsLineItem
 private:
     NetworkNode *source;
     NetworkNode *destination;
-    quint16		rssi;
-    quint8		ttl;
+    quint16     rssi;
+    quint8      ttl;
 
 public:
     NetworkEdge(NetworkNode *_source, NetworkNode *_destination, quint16 _rssi=0, quint8 _ttl=255);
@@ -25,7 +25,7 @@ public:
 
     NetworkNode *get_source() const;
     NetworkNode *get_destination() const;
-    quint16 get_rssi() const;
+    quint16     get_rssi() const;
 
     void adjust();
 

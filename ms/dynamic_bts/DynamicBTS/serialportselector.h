@@ -16,8 +16,8 @@ class SerialPortSelector: public QDialog
     Q_OBJECT
 
 private:
-    Ui::SerialPortSelector	*ui;
-    QErrorMessage			*error;
+    Ui::SerialPortSelector  *ui;
+    QErrorMessage           *error;
 
 public:
     explicit SerialPortSelector(QWidget *parent=nullptr);

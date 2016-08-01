@@ -25,9 +25,13 @@ struct RequestData
     uint16_t    bytes_left;
     uint8_t     destination;
     Assignment  assignment[SETTINGS_MAX_NODES];
-    uint8_t     queue_counter;
     uint8_t     queue_size;
     Request     queue[SETTINGS_REQUEST_QUEUE_SIZE];
+    struct
+    {
+        uint16_t current;
+        uint16_t average;
+    } latency;
 };
 
 extern struct RequestData request;

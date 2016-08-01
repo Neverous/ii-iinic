@@ -28,6 +28,7 @@ typedef struct usart_debug
 uint8_t usart_get_builtin_packet_size(const uint8_t kind);
 
 
+inline
 uint8_t usart_get_builtin_packet_size(const uint8_t kind)
 {
     switch(kind)

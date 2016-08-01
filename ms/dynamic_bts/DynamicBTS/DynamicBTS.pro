@@ -19,7 +19,10 @@ SOURCES += main.cpp\
     networkvisualization.cpp \
     networknode.cpp \
     networkedge.cpp \
-    qgraphicsfixedview.cpp
+    qgraphicsfixedview.cpp \
+    networkassignmentswidget.cpp \
+    networkstatstablewidget.cpp \
+    latencylogwidget.cpp
 
 HEADERS  += gui.h \
     serialportselector.h \
@@ -28,7 +31,10 @@ HEADERS  += gui.h \
     common.h \
     networknode.h \
     networkedge.h \
-    qgraphicsfixedview.h
+    qgraphicsfixedview.h \
+    networkassignmentswidget.h \
+    networkstatstablewidget.h \
+    latencylogwidget.h
 
 FORMS    += gui.ui \
     serialportselector.ui

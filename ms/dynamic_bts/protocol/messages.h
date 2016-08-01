@@ -36,6 +36,7 @@ typedef struct Message
 
 typedef const Message * const Message_cptr;
 
+inline
 uint8_t message_get_size(Message_cptr msg)
 {
     switch(msg->kind)
@@ -57,9 +58,6 @@ uint8_t message_get_size(Message_cptr msg)
             {
                 CASE_SUBKIND(   DEBUG_ASSIGNMENT, DebugAssignment,
                                 debug_assignment);
-
-                CASE_SUBKIND(   DEBUG_NODE_SPEAK, DebugNodeSpeak,
-                                debug_node_speak);
 
                 CASE_SUBKIND(   DEBUG_ROOT_CHANGE, DebugRootChange,
                                 debug_root_change);
@@ -85,6 +83,7 @@ uint8_t message_get_size(Message_cptr msg)
     return 1;
 }
 
+inline
 uint8_t validate_message(   Message_cptr msg, uint8_t **buffer_ptr,
                             uint8_t_cptr buffer_end)
 {

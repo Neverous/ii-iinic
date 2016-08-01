@@ -45,6 +45,7 @@ typedef struct message_ping
 
 typedef const MessagePing * const MessagePing_cptr;
 
+inline
 uint8_t message_ping_get_size(__unused__ MessagePing_cptr msg)
 {
     return sizeof(MessagePing);
@@ -102,6 +103,7 @@ void handle_usart_ping(Time_cptr time, MessagePing_cptr msg)
     }
 }
 
+inline
 void validate_ping(void)
 {
     if(!ping.ttl)

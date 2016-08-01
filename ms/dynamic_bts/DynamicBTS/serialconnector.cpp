@@ -1,9 +1,9 @@
 #include <QByteArray>
-#include <QtSerialPort/QSerialPortInfo>
 #include <QVector>
+#include <QtSerialPort/QSerialPortInfo>
 
-#include "serialconnector.h"
 #include "../protocol/messages.h"
+#include "serialconnector.h"
 
 SerialConnector::SerialConnector(QObject *parent)
     :QObject{parent}
@@ -79,74 +79,9 @@ void SerialConnector::set_option(Option _option)
     option = _option;
 }
 
-bool SerialConnector::write_message_data(quint16 mac_address, quint16 destination_mac_address, const char *data, quint16 len)
+void SerialConnector::timerEvent(QTimerEvent *)
 {
-    Q_ASSERT(len <= 248);
-    uint8_t buffer[256] = {};
-    MessageData *msg = (MessageData *) buffer;
-    msg->kind			= KIND_DATA;
-    msg->size			= (len + 7) / 8;
-    msg->macaddr		= mac_address;
-    msg->dst_macaddr	= destination_mac_address;
-    memcpy(msg->data, data, len);
-
-    uint8_t size = message_data_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-}
-
-bool SerialConnector::write_message_debug_text(const char *debug, quint8 len)
-{
-    Q_ASSERT(len <= 31);
-
-    uint8_t buffer[64] = {};
-    MessageDebugText *msg = (MessageDebugText *) buffer;
-    msg->kind		= KIND_DEBUG;
-    msg->subkind	= SUBKIND_DEBUG_TEXT;
-    memcpy(msg->text, debug, len);
-
-    uint8_t size = message_debug_text_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-
-}
-
-bool SerialConnector::write_message_neighbourhood()
-{
-    uint8_t buffer[2] = {};
-    MessageNeighbourhood *msg = (MessageNeighbourhood *) buffer;
-    msg->kind = KIND_NEIGHBOURHOOD;
-
-    uint8_t size = message_neighbourhood_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-}
-
-bool SerialConnector::write_message_neighbours(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours)
-{
-    Q_ASSERT(neighbours.length() <= 31);
-
-    uint8_t buffer[256] = {};
-    MessageNeighbours *msg = (MessageNeighbours *) buffer;
-    msg->kind		= KIND_NEIGHBOURS;
-    msg->count		= neighbours.length();
-    msg->macaddr	= mac_address;
-
-    int n = 0;
-    for(const auto &neighbour: neighbours)
-    {
-        quint16 neighbour_mac_address;
-        quint8 neighbour_rssi;
-        quint8 neighbour_ttl;
-
-        std::tie(neighbour_mac_address, neighbour_rssi, neighbour_ttl) = neighbour;
-        msg->neighbour[n] = {neighbour_mac_address, neighbour_rssi, neighbour_ttl};
-        ++ n;
-    }
-
-    uint8_t size = message_neighbours_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
+    write_message_ping(mode | option);
 }
 
 bool SerialConnector::write_message_ping(quint8 options)
@@ -161,70 +96,12 @@ bool SerialConnector::write_message_ping(quint8 options)
     return port->write((const char *) buffer, size + 2) == size + 2;
 }
 
-bool SerialConnector::write_message_request(quint16 mac_address, quint16 count, quint8 ttl)
-{
-    Q_ASSERT(count <= 4096);
-
-    uint8_t buffer[16] = {};
-    MessageRequest *msg = (MessageRequest *) buffer;
-    msg->kind		= KIND_REQUEST;
-    msg->count_high = count >> 8;
-    msg->count_low	= count;
-    msg->macaddr	= mac_address;
-    msg->ttl		= ttl;
-
-    uint8_t size = message_request_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-}
-
-bool SerialConnector::write_message_response(quint16 mac_address, quint8 assignment_ttl, quint8 len, quint32 slotmask, quint8 ttl)
-{
-    Q_ASSERT(len <= 64);
-
-    uint8_t buffer[32] = {};
-    MessageResponse *msg = (MessageResponse *) buffer;
-    msg->kind			= KIND_RESPONSE;
-    msg->macaddr		= mac_address;
-    msg->ttl			= ttl;
-    msg->assignment_ttl	= assignment_ttl;
-    msg->slotmask       = slotmask;
-
-    uint8_t size = message_response_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-}
-
-bool SerialConnector::write_message_synchronization(quint16 mac_address, quint16 root_mac_address, quint16 seq_id, quint64 global_time)
-{
-    uint8_t buffer[32] = {};
-    MessageSynchronization *msg = (MessageSynchronization *) buffer;
-    msg->kind			= KIND_SYNCHRONIZATION;
-    msg->macaddr		= mac_address;
-    msg->root_macaddr	= root_mac_address;
-    msg->seq_id			= seq_id;
-    (*(quint64 *) &msg->global_time) = global_time;
-
-    uint8_t size = message_synchronization_get_size(msg);
-    *(uint16_t *) (buffer + size) = crc16(buffer, size);
-    return port->write((const char *) buffer, size + 2) == size + 2;
-}
-
-void SerialConnector::timerEvent(QTimerEvent *)
-{
-    write_message_ping(mode | option);
-}
-
 void SerialConnector::handle_debug(const message_debug * const debug)
 {
     switch(debug->subkind)
     {
     case SUBKIND_DEBUG_ASSIGNMENT:
         handle_debug_assignment((MessageDebugAssignment_cptr) debug);
-        return;
-
-    case SUBKIND_DEBUG_NODE_SPEAK:
-        handle_debug_node_speak((MessageDebugNodeSpeak_cptr) debug);
         return;
 
     case SUBKIND_DEBUG_ROOT_CHANGE:
@@ -245,11 +122,6 @@ void SerialConnector::handle_debug_assignment(const message_debug_assignment * c
             assignments.append({debug_assignment->macaddr[n], debug_assignment->assignment[n].priority, debug_assignment->assignment[n].ttl, debug_assignment->assignment[n].slotmask});
 
     emit read_assignments(assignments);
-}
-
-void SerialConnector::handle_debug_node_speak(const message_debug_node_speak * const debug_node_speak)
-{
-    emit read_node_speak(debug_node_speak->macaddr, debug_node_speak->bytes);
 }
 
 void SerialConnector::handle_debug_root_change(const message_debug_root_change * const debug_root_change)
@@ -276,7 +148,7 @@ void SerialConnector::handle_gather(const message_gather * const gather)
         if(gather->macaddr[n])
             stats.append({gather->macaddr[n], gather->in[n], gather->out[n]});
 
-    emit read_gather(stats);
+    emit read_gather(gather->macaddr[0], gather->average_latency, stats);
 }
 
 void SerialConnector::handle_neighbours(const message_neighbours * const neighbours)

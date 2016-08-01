@@ -9,6 +9,7 @@ void initialization_handle_messages(
     Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end);
 
+inline
 static
 void initialization_loop(void)
 {
@@ -57,6 +58,7 @@ void initialization_loop(void)
     }
 }
 
+inline
 void initialization_handle_messages(
     Time_cptr time, const uint8_t rssi,
     uint8_t *buffer_ptr, uint8_t_cptr buffer_end)

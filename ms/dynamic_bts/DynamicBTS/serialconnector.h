@@ -14,13 +14,13 @@ struct message_neighbours;
 
 enum ControlMode
 {
-    MODE_HIDDEN			= 0,
-    MODE_MONITOR		= 1,
+    MODE_HIDDEN     = 0,
+    MODE_MONITOR    = 1,
 };
 
 enum Option
 {
-    OPTION_MASTER       = 2,
+    OPTION_MASTER   = 2,
 };
 
 class SerialConnector: public QObject
@@ -28,9 +28,9 @@ class SerialConnector: public QObject
     Q_OBJECT
 
 private:
-    QSerialPort	*port;
-    QByteArray	buffer;
-    QByteArray	debug_buffer;
+    QSerialPort *port;
+    QByteArray  buffer;
+    QByteArray  debug_buffer;
     ControlMode mode;
     Option      option;
 
@@ -52,14 +52,7 @@ public:
     void set_control_mode(ControlMode _mode);
     void set_option(Option _option);
 
-    bool write_message_data(quint16 mac_address, quint16 destination_mac_address, const char* data, quint16 len);
-    bool write_message_debug_text(const char* debug, quint8 len);
-    bool write_message_neighbourhood();
-    bool write_message_neighbours(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8> > &neighbours);
     bool write_message_ping(quint8 options);
-    bool write_message_request(quint16 mac_address, quint16 count, quint8 ttl);
-    bool write_message_response(quint16 mac_address, quint8 assignment_ttl, quint8 len, quint32 slotmask, quint8 ttl);
-    bool write_message_synchronization(quint16 mac_address, quint16 root_mac_address, quint16 seq_id, quint64 global_time);
 
 protected:
     void timerEvent(QTimerEvent *) Q_DECL_OVERRIDE;
@@ -67,7 +60,6 @@ protected:
 private:
     void handle_debug(const message_debug * const debug);
     void handle_debug_assignment(const message_debug_assignment * const debug_assignment);
-    void handle_debug_node_speak(const message_debug_node_speak * const debug_node_speak);
     void handle_debug_root_change(const message_debug_root_change * const debug_root_change);
     void handle_debug_text(const message_debug_text * const debug_text);
     void handle_gather(const message_gather * const gather);
@@ -86,7 +78,7 @@ signals:
     void read_node_speak(quint16 mac_address, quint8 bytes);
     void read_root_change(quint16 root_mac_address);
     void read_debug_line(const QString &debug_line);
-    void read_gather(const QList<std::tuple<quint16, quint16, quint16>> &stats);
+    void read_gather(quint16 source_mac_address, quint16 latency, const QList<std::tuple<quint16, quint16, quint16>> &stats);
     void read_neighbours(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
 };
 

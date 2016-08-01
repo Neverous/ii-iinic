@@ -28,6 +28,7 @@ void debug_complex(const char *fmt, ...);
 extern uint8_t usart_get_packet_size(const uint8_t kind);
 
 
+inline
 void iinic_usart_is_complex(void)
 {
     // usart: 230400, 8n1, rx interrupt, tx idle interrupt
@@ -37,11 +38,13 @@ void iinic_usart_is_complex(void)
     UCSRB = _BV(RXCIE) | _BV(UDRIE) | _BV(RXEN) | _BV(TXEN);
 }
 
+inline
 uint8_t usart_push(const uint8_t *buf, const uint8_t len)
 {
     return io_buffer_push(&usart.out, buf, len);
 }
 
+inline
 void usart_push_block(const uint8_t *buf, uint8_t len, bool commit)
 {
     while(len)
@@ -63,21 +66,25 @@ void usart_push_block(const uint8_t *buf, uint8_t len, bool commit)
         usart_commit();
 }
 
+inline
 uint16_t usart_crc16(const uint8_t len)
 {
     return io_buffer_crc16(&usart.in, len);
 }
 
+inline
 uint8_t usart_peek(const uint8_t **buf, const uint8_t len)
 {
     return io_buffer_peek(&usart.in, len, buf);
 }
 
+inline
 uint8_t usart_get(uint8_t *buf, const uint8_t len)
 {
     return io_buffer_get(&usart.in, buf, len);
 }
 
+inline
 void usart_get_block(uint8_t *buf, uint8_t len)
 {
     while(len)
@@ -93,22 +100,26 @@ void usart_get_block(uint8_t *buf, uint8_t len)
     }
 }
 
+inline
 uint8_t usart_pop(const uint8_t len)
 {
     return io_buffer_pop(&usart.in, len);
 }
 
+inline
 void usart_commit(void)
 {
     io_buffer_commit(&usart.out);
     UCSRB |= _BV(UDRIE);
 }
 
+inline
 uint8_t usart_pending_read(void)
 {
     return io_buffer_used_size(&usart.in);
 }
 
+inline
 uint8_t usart_pending_write(void)
 {
     return io_buffer_used_size(&usart.out);
@@ -117,6 +128,7 @@ uint8_t usart_pending_write(void)
 static uint16_t _debug_crc = 0xFFFF;
 static uint8_t _debug_current_size = 0;
 
+static
 void _debug_push(const uint8_t *ptr, uint8_t bytes)
 {
     // HEADER
@@ -186,6 +198,8 @@ void _debug_push(const uint8_t *ptr, uint8_t bytes)
     }
 }
 
+inline
+static
 void _debug_commit(void)
 {
     if(!_debug_current_size)
@@ -205,6 +219,8 @@ void _debug_commit(void)
     _debug_current_size = 0;
 }
 
+inline
+static
 void _debug_int(uint32_t input, bool sign, uint8_t zero_padding)
 {
     char buf[32];
@@ -244,6 +260,8 @@ void _debug_int(uint32_t input, bool sign, uint8_t zero_padding)
     }
 }
 
+inline
+static
 void _debug_hex(uint32_t value, uint8_t zero_padding)
 {
     char buf[8];

@@ -1,11 +1,11 @@
+#include <QGraphicsScene>
 #include <QPainter>
 #include <QStyleOption>
-#include <QGraphicsScene>
 #include <QtMath>
 
-#include "networkvisualization.h"
-#include "networknode.h"
 #include "networkedge.h"
+#include "networknode.h"
+#include "networkvisualization.h"
 
 NetworkNode::NetworkNode(quint16 _mac_address, quint8 _flags)
     :QGraphicsEllipseItem{-NetworkVisualization::NODE_SIZE/2, -NetworkVisualization::NODE_SIZE/2, NetworkVisualization::NODE_SIZE, NetworkVisualization::NODE_SIZE}
@@ -139,7 +139,7 @@ void NetworkNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
 {
     QGraphicsEllipseItem::paint(painter, option, widget);
     if(is_root)
-        painter->setPen(QPen("red"));
+        painter->setPen(QPen{Qt::red});
 
     painter->drawText(boundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(mac_address, 16));
 }
@@ -147,7 +147,7 @@ void NetworkNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *optio
 void NetworkNode::focusInEvent(QFocusEvent *event)
 {
     backup_pen = pen();
-    setPen(QPen("grey"));
+    setPen({Qt::gray});
     QGraphicsEllipseItem::focusInEvent(event);
 }
 
@@ -160,10 +160,8 @@ void NetworkNode::focusOutEvent(QFocusEvent *event)
 QVariant NetworkNode::itemChange(QGraphicsItem::GraphicsItemChange change, const QVariant &value)
 {
     if(change == ItemPositionHasChanged)
-    {
         for(auto &edge: edges)
             edge->adjust();
-    }
 
     return QGraphicsEllipseItem::itemChange(change, value);
 }

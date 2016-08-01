@@ -51,7 +51,7 @@ inline
 void message_request_set_count(MessageRequest *msg, uint16_t count)
 {
     msg->count_low = count;
-    count <<= 8;
+    count >>= 8;
     msg->count_high = count;
 }
 
@@ -76,18 +76,12 @@ void validate_request(void);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline
 void handle_request(Time_cptr time, MessageRequest_cptr msg,
                     const uint8_t rssi)
 {
     DEBUG(  TIME_FMT "|R|+REQ(%u,0x%04x,0x%04x,%u,%u)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->dst_macaddr,
             msg->ttl, message_request_get_count(msg));
-
-    _MODE_MONITOR({
-        put_debug_node_speak_message(   msg->macaddr,
-                                        message_request_get_size(msg));
-    });
 
     if(msg->macaddr == device_macaddr)
         return;
@@ -141,31 +135,15 @@ void handle_request(Time_cptr time, MessageRequest_cptr msg,
 
 void put_request_message(void)
 {
+    if(request.bytes_left < 8)
+        return;
+
     uint8_t size = sizeof(MessageRequest);
     MessageRequest *msg = (MessageRequest *) control_txbuffer_get(size);
     if(!msg)
         return;
 
-    if(request.bytes_left < 8)
-    {
-        request.bytes_left = 9 + random();
-        request.bytes_left -= request.bytes_left % 8;
-        uint8_t r = random() % neighbours_count();
-        for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
-        {
-            if(!(neighbours.is_neighbour & _BV(n)))
-                continue;
-
-            if(!r)
-            {
-                request.destination = n;
-                break;
-            }
-
-            -- r;
-        }
-    }
-
+    ++ request.latency.current;
     msg->kind           = KIND_REQUEST;
     msg->macaddr        = device_macaddr;
     msg->dst_macaddr    = neighbours.node[request.destination].macaddr;
@@ -202,6 +180,28 @@ void queue_request(uint8_t source, uint8_t destination, uint16_t size)
 inline
 void validate_request(void)
 {
+    if( request.bytes_left < 8 &&
+        !request.assignment[0].ttl &&
+        !(random() % SETTINGS_REQUEST_PROBABILITY))
+    {
+        request.bytes_left = 9 + random();
+        request.bytes_left -= request.bytes_left % 8;
+        uint8_t r = random() % neighbours_count();
+        for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
+        {
+            if(!(neighbours.is_neighbour & _BV(n)))
+                continue;
+
+            if(!r)
+            {
+                request.destination = n;
+                break;
+            }
+
+            -- r;
+        }
+    }
+
     for(uint8_t n = 0; n < SETTINGS_MAX_NODES; ++ n)
     {
         if(request.assignment[n].ttl)
@@ -213,12 +213,10 @@ void validate_request(void)
         }
 
         if( !request.assignment[n].ttl &&
-            !request.queue_counter &&
+            !(timer % 8) &&
             request.assignment[n].priority < 255)
             ++ request.assignment[n].priority;
     }
-
-    ++ request.queue_counter;
 }
 
 #endif // __AVR__

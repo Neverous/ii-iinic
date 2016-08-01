@@ -62,6 +62,7 @@ void swap_lowmem(uint8_t *dst, uint8_t *src, uint8_t size);
 void shuffle(uint8_t *array, uint8_t count, uint8_t size);
 
 
+inline
 void time_align(Time *current, int32_t alignment)
 {
     if(alignment == 0)
@@ -77,42 +78,50 @@ void time_align(Time *current, int32_t alignment)
         current->high += 1;
 }
 
+inline
 void time_add_i32(Time *time, int32_t value)
 {
     iinic_timing_add_32((iinic_timing *) time, value);
 }
 
+inline
 int8_t time_cmp(Time_cptr time1, Time_cptr time2)
 {
     return iinic_timing_cmp((iinic_timing_cptr) time1,
                             (iinic_timing_cptr) time2);
 }
 
+inline
 int8_t time_cmp_now(Time_cptr time)
 {
     return iinic_now_cmp((iinic_timing_cptr) time);
 }
 
+inline
 void time_get_now(Time *time)
 {
     iinic_get_now((iinic_timing *) time);
 }
 
+inline
 uint8_t timed_poll(uint8_t mask, Time_cptr until)
 {
     return iinic_timed_poll(mask, (iinic_timing_cptr) until);
 }
 
+inline
 void time_add(Time *a, Time_cptr b)
 {
     iinic_timing_add((iinic_timing *) a, (iinic_timing_cptr) b);
 }
 
+inline
 void time_sub(Time *a, Time_cptr b)
 {
     iinic_timing_sub((iinic_timing *) a, (iinic_timing_cptr) b);
 }
 
+inline
 uint16_t crc16(const uint8_t *buf, uint16_t len)
 {
     uint16_t crc = 0xFFFF;
@@ -124,6 +133,7 @@ uint16_t crc16(const uint8_t *buf, uint16_t len)
     return crc;
 }
 
+inline
 uint8_t _scale_rssi(uint16_t rssi)
 {
     if(rssi < 180)
@@ -147,6 +157,7 @@ void swap(uint8_t *dst, uint8_t *src, uint8_t size)
     memcpy(dst, temp, size);
 }
 
+inline
 void swap_lowmem(uint8_t *dst, uint8_t *src, uint8_t size)
 {
     if(dst == src)
@@ -161,6 +172,7 @@ void swap_lowmem(uint8_t *dst, uint8_t *src, uint8_t size)
     }
 }
 
+inline
 void shuffle(uint8_t *array, uint8_t count, uint8_t size)
 {
     while(count > 1)

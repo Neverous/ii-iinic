@@ -18,6 +18,7 @@ extern uint8_t rxbuffer[SETTINGS_RXBUFFER_SIZE];
 extern uint8_t timer;
 
 
+inline
 uint8_t *control_txbuffer_get(uint8_t bytes)
 {
     if(control_txbuffer_ptr + bytes + 2 >
@@ -27,6 +28,7 @@ uint8_t *control_txbuffer_get(uint8_t bytes)
     return control_txbuffer_ptr;
 }
 
+inline
 uint8_t *data_txbuffer_get(uint8_t bytes)
 {
     if(data_txbuffer_ptr + bytes + 2 >
@@ -36,6 +38,7 @@ uint8_t *data_txbuffer_get(uint8_t bytes)
     return data_txbuffer_ptr;
 }
 
+inline
 void control_txbuffer_commit(uint8_t bytes)
 {
     uint8_t *after = control_txbuffer_ptr + bytes;
@@ -43,6 +46,7 @@ void control_txbuffer_commit(uint8_t bytes)
     control_txbuffer_ptr = after + 2;
 }
 
+inline
 void data_txbuffer_commit(uint8_t bytes)
 {
     uint8_t *after = data_txbuffer_ptr + bytes;

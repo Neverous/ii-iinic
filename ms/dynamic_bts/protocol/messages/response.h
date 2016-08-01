@@ -52,18 +52,12 @@ void put_response_message(uint8_t n);
 
 ////////////////////////////////////////////////////////////////////////////////
 
-inline
 void handle_response(   Time_cptr time, MessageResponse_cptr msg,
                         const uint8_t rssi)
 {
     DEBUG(  TIME_FMT "|R|+RESP(%u,0x%04x,%u,%u,0x%04x)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->ttl,
             msg->assignment_ttl, msg->slotmask);
-
-    _MODE_MONITOR({
-        put_debug_node_speak_message(   msg->macaddr,
-                                        message_response_get_size(msg));
-    });
 
     uint8_t n = update_node(msg->macaddr);
     if(n == SETTINGS_MAX_NODES)
@@ -74,6 +68,18 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
 
     request.assignment[n].ttl       = msg->assignment_ttl;
     request.assignment[n].slotmask  = msg->slotmask;
+
+    if(!n && request.latency.current)
+    {
+        if(request.latency.average)
+            request.latency.average = ( (uint32_t) request.latency.average +
+                                        request.latency.current) / 2; // EWMA
+
+        else
+            request.latency.average = request.latency.current;
+
+        request.latency.current = 0;
+    }
 
     if(n)
     {
@@ -97,14 +103,12 @@ void handle_response(   Time_cptr time, MessageResponse_cptr msg,
     }
 }
 
-inline
 void put_response_message(uint8_t n)
 {
     if(request.assignment[n].ttl < SETTINGS_MAX_HOP)
         return;
 
     uint8_t size = sizeof(MessageResponse);
-
     MessageResponse *msg = (MessageResponse *) control_txbuffer_get(size);
 
     if(!msg)

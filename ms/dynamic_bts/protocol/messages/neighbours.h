@@ -45,6 +45,7 @@ typedef struct message_neighbours
 
 typedef const MessageNeighbours * const MessageNeighbours_cptr;
 
+inline
 uint8_t message_neighbours_get_size(MessageNeighbours_cptr msg)
 {
     return sizeof(MessageNeighbours) + msg->count * sizeof(NeighbourInfo);
@@ -75,11 +76,6 @@ void handle_neighbours( Time_cptr time, MessageNeighbours_cptr msg,
 {
     DEBUG(  TIME_FMT "|R|+NS(%u,0x%04x,%u,%u)\r\n",
             TIME_FMT_DATA(*time), rssi, msg->macaddr, msg->ttl, msg->count);
-
-    _MODE_MONITOR({
-        put_debug_node_speak_message(   msg->macaddr,
-                                        message_neighbours_get_size(msg));
-    });
 
     if(msg->macaddr == device_macaddr)
         return;
@@ -197,6 +193,7 @@ void update_neighbour(  Time_cptr time,
     }
 }
 
+inline
 void validate_neighbours(void)
 {
     Edge *edge = neighbours.edge;
@@ -300,6 +297,7 @@ uint8_t update_edge(const uint8_t source, const uint8_t destination,
     return e;
 }
 
+inline
 uint8_t neighbours_count(void)
 {
     return __builtin_popcount(neighbours.is_neighbour);
