@@ -8,6 +8,8 @@ QT       += core gui serialport
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+unix:QMAKE_LFLAGS += -Wl,-z,origin -Wl,-rpath,\\\$\$ORIGIN
+
 TARGET = DynamicBTS
 TEMPLATE = app
 VERSION = 1.0.0

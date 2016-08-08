@@ -217,7 +217,7 @@
     <message>
         <location filename="../gui.ui" line="683"/>
         <source>About Qt</source>
-        <translation>O Qr</translation>
+        <translation>O Qt</translation>
     </message>
 </context>
 <context>
