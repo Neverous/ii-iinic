@@ -24,7 +24,6 @@ private:
     NetworkVisualization    *visualization;
     SerialConnector         *connector;
     SerialPortSelector      *selector;
-    QErrorMessage           *error;
     QLabel                  *mode_box;
     QWidget                 *status_box;
 
@@ -40,14 +39,14 @@ private:
     void configure_message_neighbours_neighbours_list();
 
 private slots:
-    void on_serial_port_selected(const QString &port_name, qint32 baud_rate);
+    void _on_serial_port_selected(const QString &port_name, qint32 baud_rate);
     void on_action_open_triggered();
     void on_action_close_triggered();
-    void on_debug_line_read(const QString &debug_line);
+    void _on_debug_line_read(const QString &debug_line);
     void on_assignments(const QList<std::tuple<quint16, quint8, quint8, quint16>> &_assignments);
     void on_gather(quint16 source_mac_address, quint16 latency, const QList<std::tuple<quint16, quint16, quint16> > &stats);
-    void on_root_change(quint16 root_mac_address);
-    void on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
+    void _on_root_change(quint16 root_mac_address);
+    void _on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours);
     void on_error(const QString &error);
     void on_info(const QString &info);
     void on_success(const QString &success);
@@ -60,6 +59,7 @@ private slots:
     void on_action_export_data_stats_triggered();
     void on_action_export_latency_stats_triggered();
     void on_action_export_graph_triggered();
+    void on_action_about_qt_triggered();
 };
 
 #endif // GUI_H

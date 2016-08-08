@@ -17,7 +17,6 @@ class SerialPortSelector: public QDialog
 
 private:
     Ui::SerialPortSelector  *ui;
-    QErrorMessage           *error;
 
 public:
     explicit SerialPortSelector(QWidget *parent=nullptr);
@@ -31,7 +30,7 @@ private:
     void populate_serial_ports_list();
 
 private slots:
-    void on_button_box_refresh();
+    void _on_button_box_refresh();
     void on_buttons_accepted();
 
 signals:

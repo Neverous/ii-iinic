@@ -10,10 +10,11 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
 TARGET = DynamicBTS
 TEMPLATE = app
-
+VERSION = 1.0.0
+DESTDIR = deploy/
 
 SOURCES += main.cpp\
-        gui.cpp \
+    gui.cpp \
     serialportselector.cpp \
     serialconnector.cpp \
     networkvisualization.cpp \
@@ -39,5 +40,8 @@ HEADERS  += gui.h \
 FORMS    += gui.ui \
     serialportselector.ui
 
-RESOURCES += \
-    qdarkstyle/style.qrc
+TRANSLATIONS += translations/pl_PL.ts
+
+RESOURCES += qdarkstyle/style.qrc \
+    translations/pl_PL.qm \
+    tango/tango.qrc

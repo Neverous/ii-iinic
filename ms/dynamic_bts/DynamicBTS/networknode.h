@@ -18,7 +18,7 @@ private:
     quint8                  flags;
     QPointF                 new_position;
     QPen                    backup_pen;
-    bool                    is_root;
+    bool                    root;
 
 public:
     NetworkNode(quint16 _mac_address, quint8 _flags=0);
@@ -29,7 +29,8 @@ public:
 
     void calculate_forces();
     bool move();
-    void setRoot(bool value=true);
+    void set_root(bool value=true);
+    bool is_root();
 
 protected:
     void add_edge(NetworkEdge *edge);

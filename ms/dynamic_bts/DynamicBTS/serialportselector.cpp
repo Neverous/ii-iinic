@@ -1,4 +1,4 @@
-#include <QErrorMessage>
+#include <QMessageBox>
 #include <QPushButton>
 #include <QStandardItemModel>
 #include <QtSerialPort/QSerialPortInfo>
@@ -10,7 +10,6 @@
 SerialPortSelector::SerialPortSelector(QWidget *parent)
     :QDialog{parent}
     ,ui{new Ui::SerialPortSelector}
-    ,error{new QErrorMessage{this}}
 {
     ui->setupUi(this);
 
@@ -20,7 +19,7 @@ SerialPortSelector::SerialPortSelector(QWidget *parent)
         refresh,
         SIGNAL(clicked()),
         this,
-        SLOT(on_button_box_refresh())
+        SLOT(_on_button_box_refresh())
     );
 
     configure_serial_ports_list();
@@ -28,7 +27,6 @@ SerialPortSelector::SerialPortSelector(QWidget *parent)
 
 SerialPortSelector::~SerialPortSelector()
 {
-    delete error;
     delete ui;
 }
 
@@ -68,7 +66,7 @@ void SerialPortSelector::populate_serial_ports_list()
     ui->serial_ports_list_box->resizeColumnsToContents();
 }
 
-void SerialPortSelector::on_button_box_refresh()
+void SerialPortSelector::_on_button_box_refresh()
 {
     populate_serial_ports_list();
     ui->serial_ports_list_box->setFocus();
@@ -79,7 +77,7 @@ void SerialPortSelector::on_buttons_accepted()
     auto selection = ui->serial_ports_list_box->selectionModel();
     if(!selection->hasSelection())
     {
-        error->showMessage(QObject::tr("Please choose port"));
+        QMessageBox::critical(this, QObject::tr("Error"), QObject::tr("Please choose port"));
         return;
     }
 

@@ -5,8 +5,15 @@
 
 // Dla kompatybilności z kodem z AVR
 
-#define __unused__          __attribute__((unused))
 #define SETTINGS_MAX_NODES  16 // sync with ../config.h
+
+#ifndef _MSC_VER
+#define __unused__          __attribute__((unused))
+#else
+#pragma warning(disable: 4100)  // unreferenced formal parameter
+#pragma warning(disable: 4200)  // nonstandard extension used: zero-sized array in struct/union
+#define __unused__
+#endif
 
 #pragma pack(push, 1)
 

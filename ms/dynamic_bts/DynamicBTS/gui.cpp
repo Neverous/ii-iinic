@@ -1,4 +1,3 @@
-#include <QErrorMessage>
 #include <QFileDialog>
 #include <QLabel>
 #include <QMessageBox>
@@ -17,7 +16,6 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
     ,visualization{new NetworkVisualization}
     ,connector{_connector}
     ,selector{new SerialPortSelector{this}}
-    ,error{new QErrorMessage{this}}
     ,mode_box{new QLabel{this}}
     ,status_box{new QWidget{this}}
 {
@@ -31,14 +29,14 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
         selector,
         SIGNAL(serial_port_selected(QString, qint32)),
         this,
-        SLOT(on_serial_port_selected(QString, qint32))
+        SLOT(_on_serial_port_selected(QString, qint32))
     );
 
     connect(
         connector,
         SIGNAL(read_debug_line(QString)),
         this,
-        SLOT(on_debug_line_read(QString))
+        SLOT(_on_debug_line_read(QString))
     );
 
     connect(
@@ -52,14 +50,14 @@ GUI::GUI(SerialConnector *_connector, QWidget *parent)
         connector,
         SIGNAL(read_neighbours(quint16, QList<std::tuple<quint16, quint8, quint8>>)),
         this,
-        SLOT(on_neighbours_read(quint16, QList<std::tuple<quint16, quint8, quint8>>))
+        SLOT(_on_neighbours_read(quint16, QList<std::tuple<quint16, quint8, quint8>>))
     );
 
     connect(
         connector,
         SIGNAL(read_root_change(quint16)),
         this,
-        SLOT(on_root_change(quint16))
+        SLOT(_on_root_change(quint16))
     );
 
     connect(
@@ -131,7 +129,7 @@ void GUI::change_control_mode(qint32 mode)
     connector->set_control_mode((ControlMode) mode);
 }
 
-void GUI::on_serial_port_selected(const QString &port_name, qint32 baud_rate)
+void GUI::_on_serial_port_selected(const QString &port_name, qint32 baud_rate)
 {
     if(connector->is_connected())
         connector->disconnect();
@@ -146,7 +144,7 @@ void GUI::on_serial_port_selected(const QString &port_name, qint32 baud_rate)
     if(!connector->set_baud_rate(baud_rate))
     {
         selector->show();
-        error->showMessage(
+        QMessageBox::critical(this, QObject::tr("Error"),
             QObject::tr("Failed to set baud rate %1, error: %2")
                     .arg(baud_rate)
                     .arg(connector->get_error()));
@@ -156,7 +154,7 @@ void GUI::on_serial_port_selected(const QString &port_name, qint32 baud_rate)
     if(!connector->connect())
     {
         selector->show();
-        error->showMessage(
+        QMessageBox::critical(this, QObject::tr("Error"),
             QObject::tr("Failed to open port %1, error: %2")
                     .arg(port_name)
                     .arg(connector->get_error()));
@@ -178,7 +176,7 @@ void GUI::on_action_close_triggered()
     qApp->quit();
 }
 
-void GUI::on_debug_line_read(const QString &debug_line)
+void GUI::_on_debug_line_read(const QString &debug_line)
 {
     ui->debug_box->append(debug_line);
 }
@@ -194,12 +192,12 @@ void GUI::on_gather(quint16 source_mac_address, quint16 latency, const QList<std
     ui->latency_box->update_node(source_mac_address, latency);
 }
 
-void GUI::on_root_change(quint16 root_mac_address)
+void GUI::_on_root_change(quint16 root_mac_address)
 {
     visualization->update_root(root_mac_address);
 }
 
-void GUI::on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours)
+void GUI::_on_neighbours_read(quint16 mac_address, const QList<std::tuple<quint16, quint8, quint8>> &neighbours)
 {
     visualization->update_node(mac_address, neighbours);
 }
@@ -252,8 +250,22 @@ void GUI::on_tab_box_currentChanged(int)
 
 void GUI::on_action_about_triggered()
 {
-    QMessageBox::about(this, QObject::tr("About DynamicBTS"),
-        QObject::tr("This is simple client for debugging simple_bts devices."));
+    QMessageBox *about = new QMessageBox{this};
+    about->setTextFormat(Qt::RichText);
+    about->setWindowTitle(QObject::tr("About DynamicBTS"));
+    about->setText(
+        QObject::tr("This is simple client for debugging dynamic_bts devices.") +
+        "<br/><br/>" +
+        QObject::tr("QStyle used:") + " <a href='https://github.com/ColinDuquesnoy/QDarkStyleSheet'>QDarkStyleSheet</a>" +
+        "<br/>" +
+        QObject::tr("Icon theme used:") + "<a href='http://tango.freedesktop.org/'>Tango</a>"
+    );
+    about->show();
+}
+
+void GUI::on_action_about_qt_triggered()
+{
+    QMessageBox::aboutQt(this, QObject::tr("About Qt"));
 }
 
 void GUI::on_action_export_log_triggered()
@@ -271,9 +283,10 @@ void GUI::on_action_export_log_triggered()
     }
 
     else
-        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
-                                    .arg(file_name)
-                                    .arg(file.errorString()));
+        QMessageBox::critical(this, QObject::tr("Error"),
+            QObject::tr("Failed to save file %1, error: %2")
+                    .arg(file_name)
+                    .arg(file.errorString()));
 }
 
 void GUI::on_action_export_data_stats_triggered()
@@ -289,7 +302,7 @@ void GUI::on_action_export_data_stats_triggered()
         QTextStream output{&file};
         int columns = ui->data_stats_box->columnCount();
         for(int c = 0; c < columns; ++ c)
-            output << ";\"" << ui->data_stats_box->horizontalHeaderItem(c)->text() << "\"";
+            output << ",\"" << ui->data_stats_box->horizontalHeaderItem(c)->text() << "\"";
 
         output << "\n";
 
@@ -300,7 +313,7 @@ void GUI::on_action_export_data_stats_triggered()
             for(int c = 0; c < columns; ++ c)
             {
                 auto item = ui->data_stats_box->item(r, c);
-                output << ";\"" << (item ? item->text() : "") << "\"";
+                output << ",\"" << (item ? item->text() : "") << "\"";
             }
 
             output << "\n";
@@ -310,9 +323,10 @@ void GUI::on_action_export_data_stats_triggered()
     }
 
     else
-        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
-                                    .arg(file_name)
-                                    .arg(file.errorString()));
+        QMessageBox::critical(this, QObject::tr("Error"),
+            QObject::tr("Failed to save file %1, error: %2")
+                    .arg(file_name)
+                    .arg(file.errorString()));
 }
 
 void GUI::on_action_export_latency_stats_triggered()
@@ -328,7 +342,7 @@ void GUI::on_action_export_latency_stats_triggered()
         QTextStream output{&file};
         int columns = ui->latency_box->columnCount();
         for(int c = 0; c < columns; ++ c)
-            output << ";\"" << ui->latency_box->horizontalHeaderItem(c)->text() << "\"";
+            output << ",\"" << ui->latency_box->horizontalHeaderItem(c)->text() << "\"";
 
         output << "\n";
 
@@ -340,7 +354,7 @@ void GUI::on_action_export_latency_stats_triggered()
             for(int c = 0; c < columns; ++ c)
             {
                 auto item = ui->latency_box->item(r, c);
-                output << ";\"" << (item ? item->text() : "") << "\"";
+                output << ",\"" << (item ? item->text() : "") << "\"";
             }
             output << "\n";
         }
@@ -349,9 +363,10 @@ void GUI::on_action_export_latency_stats_triggered()
     }
 
     else
-        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
-                                    .arg(file_name)
-                                    .arg(file.errorString()));
+        QMessageBox::critical(this, QObject::tr("Error"),
+            QObject::tr("Failed to save file %1, error: %2")
+                    .arg(file_name)
+                    .arg(file.errorString()));
 }
 
 void GUI::on_action_export_graph_triggered()
@@ -369,14 +384,14 @@ void GUI::on_action_export_graph_triggered()
         QSet<NetworkEdge *> edges;
         for(auto &node: visualization->get_nodes())
         {
-            output << "    " << QString::number(node->get_mac_address(), 16) << ";\n";
+            output << "    \"" << QString::number(node->get_mac_address(), 16) << "\"" << (node->is_root() ? " [color=\"red\"]" : "") << ";\n";
             for(auto &edge: node->get_edges())
                 edges << edge;
         }
 
         for(auto &edge: edges)
-            output << "    " << QString::number(edge->get_source()->get_mac_address(), 16)
-                   << " -- " << QString::number(edge->get_destination()->get_mac_address(), 16)
+            output << "    \"" << QString::number(edge->get_source()->get_mac_address(), 16) << "\""
+                   << " -- \"" << QString::number(edge->get_destination()->get_mac_address(), 16) << "\""
                    << " [label=\"" << QString::number(edge->get_rssi()) << "\"];\n";
 
         output << "}\n";
@@ -384,7 +399,8 @@ void GUI::on_action_export_graph_triggered()
     }
 
     else
-        error->showMessage(QObject::tr("Failed to save file %1, error: %2")
-                                    .arg(file_name)
-                                    .arg(file.errorString()));
+        QMessageBox::critical(this, QObject::tr("Error"),
+            QObject::tr("Failed to save file %1, error: %2")
+                    .arg(file_name)
+                    .arg(file.errorString()));
 }

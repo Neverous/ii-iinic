@@ -14,7 +14,7 @@ NetworkNode::NetworkNode(quint16 _mac_address, quint8 _flags)
     ,flags{_flags}
     ,new_position{}
     ,backup_pen{}
-    ,is_root{false}
+    ,root{false}
 {
     setFlag(ItemIsMovable);
     setFlag(ItemIsFocusable);
@@ -119,10 +119,15 @@ bool NetworkNode::move()
     return true;
 }
 
-void NetworkNode::setRoot(bool value)
+void NetworkNode::set_root(bool value)
 {
-    is_root = value;
+    root = value;
     update();
+}
+
+bool NetworkNode::is_root()
+{
+    return root;
 }
 
 void NetworkNode::add_edge(NetworkEdge *edge)
@@ -138,7 +143,7 @@ void NetworkNode::remove_edge(NetworkEdge *edge)
 void NetworkNode::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
     QGraphicsEllipseItem::paint(painter, option, widget);
-    if(is_root)
+    if(root)
         painter->setPen(QPen{Qt::red});
 
     painter->drawText(boundingRect(), Qt::AlignHCenter | Qt::AlignVCenter, QString::number(mac_address, 16));

@@ -13,6 +13,10 @@
   <property name="windowTitle">
    <string>DynamicBTS</string>
   </property>
+  <property name="windowIcon">
+   <iconset theme="utilities-system-monitor">
+    <normaloff>.</normaloff>.</iconset>
+  </property>
   <widget class="QWidget" name="vertical">
    <layout class="QVBoxLayout" name="verticalLayout">
     <property name="spacing">
@@ -504,8 +508,9 @@
      <string>Help</string>
     </property>
     <addaction name="action_about"/>
+    <addaction name="action_about_qt"/>
    </widget>
-   <widget class="QMenu" name="menuExport">
+   <widget class="QMenu" name="menu_export">
     <property name="title">
      <string>Export</string>
     </property>
@@ -516,7 +521,7 @@
    </widget>
    <addaction name="menu_file"/>
    <addaction name="menu_mode"/>
-   <addaction name="menuExport"/>
+   <addaction name="menu_export"/>
    <addaction name="menu_help"/>
   </widget>
   <widget class="QStatusBar" name="status_bar"/>
@@ -536,6 +541,9 @@
    </property>
    <property name="text">
     <string>Close</string>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::QuitRole</enum>
    </property>
   </action>
   <action name="mode_master">
@@ -570,6 +578,12 @@
    <property name="text">
     <string>About</string>
    </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::AboutRole</enum>
+   </property>
   </action>
   <action name="mode_hidden">
    <property name="checkable">
@@ -592,16 +606,28 @@
    <property name="enabled">
     <bool>false</bool>
    </property>
+   <property name="icon">
+    <iconset theme="preferences-system"/>
+   </property>
    <property name="text">
     <string>Mode:</string>
+   </property>
+   <property name="toolTip">
+    <string>Mode</string>
    </property>
   </action>
   <action name="options">
    <property name="enabled">
     <bool>false</bool>
    </property>
+   <property name="icon">
+    <iconset theme="preferences-desktop-theme"/>
+   </property>
    <property name="text">
     <string>Options:</string>
+   </property>
+   <property name="toolTip">
+    <string>Options</string>
    </property>
   </action>
   <action name="option_master">
@@ -613,23 +639,54 @@
    </property>
   </action>
   <action name="action_export_log">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
    <property name="text">
     <string>Export log</string>
    </property>
   </action>
   <action name="action_export_data_stats">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
    <property name="text">
     <string>Export data stats</string>
    </property>
   </action>
   <action name="action_export_latency_stats">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
    <property name="text">
     <string>Export latency stats</string>
    </property>
   </action>
   <action name="action_export_graph">
+   <property name="icon">
+    <iconset theme="document-save">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
    <property name="text">
     <string>Export graph</string>
+   </property>
+  </action>
+  <action name="action_about_qt">
+   <property name="icon">
+    <iconset theme="help-about">
+     <normaloff>.</normaloff>.</iconset>
+   </property>
+   <property name="text">
+    <string>About Qt</string>
+   </property>
+   <property name="shortcutContext">
+    <enum>Qt::ApplicationShortcut</enum>
+   </property>
+   <property name="menuRole">
+    <enum>QAction::AboutQtRole</enum>
    </property>
   </action>
  </widget>
