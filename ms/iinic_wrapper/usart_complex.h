@@ -11,7 +11,7 @@
 #include "usart_structs.h"
 
 #undef debug
-#define debug debug_complex
+#define debug(fmt, ...) debug_complex(PSTR("" fmt), ## __VA_ARGS__)
 
 void iinic_usart_is_complex(void);
 uint8_t usart_push(const uint8_t *buf, const uint8_t len);

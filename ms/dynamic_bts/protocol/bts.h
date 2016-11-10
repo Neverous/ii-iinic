@@ -473,7 +473,7 @@ void _redo_existing_assignments(void)
 
         data_listen_once();
 
-        if(!ttl)
+        if(ttl < SETTINGS_MAX_HOP)
             continue;
 
         if(!slotmask)
@@ -508,14 +508,6 @@ void _create_new_assignments(void)
         if(!assignment[n].ttl)
             continue;
 
-        bool valid = true;
-        for(uint8_t r = 0; r < request.queue_size && valid; ++ r)
-            if(!assignment[queue[r].source].ttl)
-                valid = queue[r].source != n;
-
-        if(!valid)
-            continue;
-
         free_slotmask &= ~assignment[n].slotmask;
     }
 
@@ -538,8 +530,8 @@ void _create_new_assignments(void)
         if(assignment[n].ttl)
             continue;
 
-        uint8_t slots = max(1,
-            (uint32_t) free_slots * queue[r].size / size_sum);
+        uint8_t slots = max(1, min(free_slots,
+            ((uint32_t) free_slots * queue[r].size + size_sum - 1) / size_sum));
 
         uint8_t ttl = min(  max(queue[r].size / 192 / slots,
                                 SETTINGS_MAX_HOP * 8),
@@ -572,6 +564,9 @@ void data_step_server(Time_cptr deadline)
         data_listen_until(deadline);
         return;
     }
+
+    if(!request.queue_size)
+        return;
 
     {
         uint16_t neighbour[SETTINGS_MAX_NODES];
