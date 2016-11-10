@@ -52,4 +52,7 @@ enum Settings
 
 //#define STATIC_ROOT 0xFFFF
 
+//#define BTS_MODE
+#define RANDOM_MODE
+
 #endif // __CONFIG_H__

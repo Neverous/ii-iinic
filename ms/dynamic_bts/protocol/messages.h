@@ -18,7 +18,9 @@
 #include "messages/neighbours.h"
 #include "messages/ping.h"
 #include "messages/request.h"
+#ifdef BTS_MODE
 #include "messages/response.h"
+#endif
 #include "messages/synchronization.h"
 
 #define KIND_EOF        0xE
@@ -73,8 +75,10 @@ uint8_t message_get_size(Message_cptr msg)
 #ifdef __AVR__
         CASE_KIND(PING,             Ping,               ping);
 #endif
+#ifdef BTS_MODE
         CASE_KIND(REQUEST,          Request,            request);
         CASE_KIND(RESPONSE,         Response,           response);
+#endif
         CASE_KIND(SYNCHRONIZATION,  Synchronization,    synchronization);
 
 #undef CASE_KIND

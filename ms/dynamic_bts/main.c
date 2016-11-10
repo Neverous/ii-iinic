@@ -1,5 +1,12 @@
 #include "common.h"
+
+#if defined(BTS_MODE)
 #include "protocol/bts.h"
+#elif defined(RANDOM_MODE)
+#include "protocol/random.h"
+#else
+#error "One of the modes (BTS or RANDOM) must be configured"
+#endif
 #include "protocol/initialization.h"
 #include "protocol/messages.h"
 
@@ -80,6 +87,11 @@ void iinic_main(void)
     // INITIALIZATION
     initialization_loop();
 
+#if defined(BTS_MODE)
     // MAIN (BTS) LOOP
     bts_loop();
+#elif defined(RANDOM_MODE)
+    // MAIN (RANDOM) LOOP
+    random_loop();
+#endif
 }
